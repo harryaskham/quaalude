@@ -1,4 +1,4 @@
-module Adlude
+module Quaalude
   ( module X,
     Seq (..),
     deleteFindMin,
