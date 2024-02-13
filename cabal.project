@@ -1,0 +1,8 @@
+packages:
+  ./quaalude.cabal
+
+package z3
+  extra-lib-dirs: /Users/askham/.nix-profile/lib
+  extra-include-dirs: /Users/askham/.nix-profile/include
+  extra-lib-dirs: /home/harry/.nix-profile/lib
+  extra-include-dirs: /home/harry/.nix-profile/include
