@@ -23,6 +23,7 @@ import Helper.Collection
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
+import System.Random (RandomGen, getStdGen, newStdGen, randomR, setStdGen)
 import Text.Megaparsec (Parsec, Stream, parseMaybe)
 import Text.Megaparsec.Char (digitChar)
 import Text.ParserCombinators.Parsec (Parser, char, count, eof, many1, noneOf, oneOf, parse, sepBy, try)
@@ -91,6 +92,14 @@ type MParser a = Parsec Void String a
 
 parserM :: (Stream s, Ord e) => Parsec e s a -> s -> a
 parserM p t = unjust $ parseMaybe p t
+
+-- Show helpers
+
+tshow :: (Show a) => a -> Text
+tshow = T.pack . show
+
+ltshow :: (Show a) => a -> Text
+ltshow = T.toLower . tshow
 
 -- Typeclass helpers / functional helpers
 
@@ -368,3 +377,18 @@ unjust Nothing = error "unjust Nothing"
 -- rangeFromTo not caring about ordering
 range :: (Ord a, Enum a) => a -> a -> [a]
 range a b = [min a b .. max a b]
+
+-- Random helpers
+
+randomFromEnum :: (RandomGen g, Enum a, Bounded a) => g -> (a, g)
+randomFromEnum g =
+  let items = [minBound .. maxBound]
+      (i, g') = randomR (0, length items) g
+   in (items !! i, g')
+
+randomFromEnumIO :: (Enum a, Bounded a) => IO a
+randomFromEnumIO = do
+  g <- getStdGen
+  let (a, g') = randomFromEnum g
+  setStdGen g'
+  return a
