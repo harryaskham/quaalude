@@ -383,7 +383,7 @@ range a b = [min a b .. max a b]
 randomFromEnum :: (RandomGen g, Enum a, Bounded a) => g -> (a, g)
 randomFromEnum g =
   let items = [minBound .. maxBound]
-      (i, g') = randomR (0, length items) g
+      (i, g') = randomR (0, length items - 1) g
    in (items !! i, g')
 
 randomFromEnumIO :: (Enum a, Bounded a) => IO a
