@@ -101,6 +101,9 @@ tshow = T.pack . show
 ltshow :: (Show a) => a -> Text
 ltshow = T.toLower . tshow
 
+utshow :: (Show a) => a -> Text
+utshow = T.toUpper . tshow
+
 -- Typeclass helpers / functional helpers
 
 infixl 5 <$$>
