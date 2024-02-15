@@ -383,11 +383,20 @@ range a b = [min a b .. max a b]
 
 -- Random helpers
 
+randomElement :: (RandomGen g) => [a] -> g -> (a, g)
+randomElement xs g = let (i, g') = randomR (0, length xs - 1) g in (xs !! i, g')
+
+randomElementIO :: [a] -> IO a
+randomElementIO xs = do
+  g <- getStdGen
+  let (a, g') = randomElement xs g
+  setStdGen g'
+  return a
+
 randomFromEnum :: (RandomGen g, Enum a, Bounded a) => g -> (a, g)
 randomFromEnum g =
   let items = [minBound .. maxBound]
-      (i, g') = randomR (0, length items - 1) g
-   in (items !! i, g')
+   in randomElement items g
 
 randomFromEnumIO :: (Enum a, Bounded a) => IO a
 randomFromEnumIO = do
