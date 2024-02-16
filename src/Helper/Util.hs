@@ -266,7 +266,7 @@ csvLine :: Parser a -> Parser [a]
 csvLine a = a `sepBy` char ',' <* (eol >> eof)
 
 csv :: Parser [String]
-csv = many (noneOf ",") `sepBy` char ','
+csv = many (noneOf ",\n") `sepBy` char ','
 
 -- Map helpers
 
