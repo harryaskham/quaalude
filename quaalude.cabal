@@ -40,7 +40,9 @@ common common-settings
                         random-shuffle,
                         MonadRandom,
                         string-qq,
-                        hashable
+                        hashable,
+                        aeson,
+                        aeson-casing
     default-language:   Haskell2010
     mixins:             base hiding (Prelude),
                         relude (Relude as Prelude),
@@ -121,3 +123,4 @@ library
                         Helper.Braket
                         Helper.Unary
                         Helper.Util
+                        Helper.Records
