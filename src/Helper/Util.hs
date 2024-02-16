@@ -6,6 +6,7 @@ module Helper.Util where
 import Control.Arrow (Arrow ((***)))
 import Control.Lens ((^.))
 import Control.Monad (filterM)
+import Control.Monad.Random.Class
 import Data.Bitraversable
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
@@ -24,6 +25,7 @@ import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random (RandomGen, getStdGen, newStdGen, randomR, setStdGen)
+import System.Random.Shuffle qualified as Shuffle
 import Text.Megaparsec (Parsec, Stream, parseMaybe)
 import Text.Megaparsec.Char (digitChar)
 import Text.ParserCombinators.Parsec (Parser, char, count, eof, many1, noneOf, oneOf, parse, sepBy, try)
@@ -404,3 +406,15 @@ randomFromEnumIO = do
   let (a, g') = randomFromEnum g
   setStdGen g'
   return a
+
+shuffle :: (RandomGen g) => [a] -> g -> [a]
+shuffle xs = Shuffle.shuffle' xs (length xs)
+
+-- Because default random shuffling is pretty awful
+shuffleIO :: [a] -> IO [a]
+shuffleIO xs = do
+  g <- getStdGen
+  let xs' = Shuffle.shuffle' xs (length xs) g
+  g' <- newStdGen
+  setStdGen g'
+  return xs'

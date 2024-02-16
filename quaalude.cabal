@@ -37,6 +37,8 @@ common common-settings
                         lens,
                         bitwise,
                         random,
+                        random-shuffle,
+                        MonadRandom,
                         string-qq,
                         hashable
     default-language:   Haskell2010
