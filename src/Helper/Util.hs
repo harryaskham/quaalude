@@ -88,13 +88,6 @@ parseLinesWith line = parseWith $ many1 (line <* eol) <* eof
 
 infixl 5 |-
 
--- megaparsec helpers
-type MParser :: Type -> Type
-type MParser a = Parsec Void String a
-
-parserM :: (Stream s, Ord e) => Parsec e s a -> s -> a
-parserM p t = unjust $ parseMaybe p t
-
 -- Show helpers
 
 tshow :: (Show a) => a -> Text

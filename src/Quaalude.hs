@@ -20,6 +20,7 @@ import Helper.Bits as X
 import Helper.Collection as X
 import Helper.Coord as X
 import Helper.Grid as X
+import Helper.Megaparsec as X
 import Helper.Records as X
 import Helper.TH as X
 import Helper.Tracers as X
