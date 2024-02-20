@@ -6,3 +6,5 @@ package z3
   extra-include-dirs: /Users/askham/.nix-profile/include
   extra-lib-dirs: /home/harry/.nix-profile/lib
   extra-include-dirs: /home/harry/.nix-profile/include
+  extra-lib-dirs: /home/ema/.nix-profile/lib
+  extra-include-dirs: /home/ema/.nix-profile/include
