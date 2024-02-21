@@ -12,8 +12,8 @@
         pkgs = import nixpkgs { inherit system; };
         packageName = "quaalude";
       in with pkgs; rec {
-        packages.${packageName} = haskellPackages.callCabal2nix "quaalude" ./. {  };
-        defaultPackage = packages.${quaalude};
+        packages.${packageName} = haskellPackages.callCabal2nix "${packageName}" ./. {  };
+        defaultPackage = packages.${packageName};
       }
     );
 }
