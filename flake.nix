@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        packageName = "quaalude"
+        packageName = "quaalude";
       in with pkgs; rec {
         packages.${packageName} = haskellPackages.callCabal2nix "quaalude" ./. {  };
         defaultPackage = packages.${quaalude};
