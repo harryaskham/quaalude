@@ -1,2 +1,2 @@
-with import <nixpkgs> { };
-haskellPackages.callPackage ./default.nix { }
+{ pkgs ? import <nixpkgs> { config = { allowBroken = true; }; } }:
+pkgs.haskellPackages.callCabal2nix "" ./. {  }
