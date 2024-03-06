@@ -100,7 +100,7 @@ class TShow a where
   utshow :: a -> Text
   utshow = T.toUpper . tshow
 
-instance (Show a) => TShow a where
+instance {-# OVERLAPPABLE #-} (Show a) => TShow a where
   tshow = T.pack . show
 
 instance {-# OVERLAPPING #-} TShow Text where
