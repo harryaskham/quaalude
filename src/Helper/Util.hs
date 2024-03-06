@@ -1,5 +1,6 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Helper.Util where
 
@@ -90,19 +91,18 @@ infixl 5 |-
 
 -- Show helpers
 
-class (Show a) => TShow a where
-  tshow :: a -> Text
+class TShow a where
+  tshow :: (Show a) => a -> Text
   tshow = T.pack . show
-  tshowM :: Maybe a -> Text
+  tshowM :: (Show a) => Maybe a -> Text
   tshowM Nothing = "<null>"
   tshowM (Just t) = tshow t
-  ltshow :: a -> Text
+  ltshow :: (Show a) => a -> Text
   ltshow = T.toLower . tshow
-  utshow :: a -> Text
+  utshow :: (Show a) => a -> Text
   utshow = T.toUpper . tshow
 
-instance (Show a, ToText a) => TShow a where
-  tshow = toText
+instance (Show a) => TShow a
 
 -- Typeclass helpers / functional helpers
 
