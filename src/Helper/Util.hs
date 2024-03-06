@@ -90,8 +90,9 @@ infixl 5 |-
 
 -- Show helpers
 
-class TShow a where
+class (Show a) => TShow a where
   tshow :: a -> Text
+  tshow = T.pack . show
   tshowM :: Maybe a -> Text
   tshowM Nothing = "<null>"
   tshowM (Just t) = tshow t
@@ -100,11 +101,8 @@ class TShow a where
   utshow :: a -> Text
   utshow = T.toUpper . tshow
 
-instance {-# OVERLAPPABLE #-} (Show a) => TShow a where
-  tshow = T.pack . show
-
-instance {-# OVERLAPPING #-} TShow Text where
-  tshow = id
+instance (Show a, ToText a) => TShow a where
+  tshow = toText
 
 -- Typeclass helpers / functional helpers
 
