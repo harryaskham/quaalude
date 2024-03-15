@@ -382,8 +382,8 @@ range a b = [min a b .. max a b]
 randomElement :: (RandomGen g) => [a] -> g -> (a, g)
 randomElement xs g = let (i, g') = randomR (0, length xs - 1) g in (xs !! i, g')
 
-randomElements :: (RandomGen g) => [a] -> g -> ([a], g)
-randomElements xs g = foldl' (\(as, g') _ -> let (a, g'') = randomElement xs g' in (a : as, g'')) ([], g) xs
+randomElements :: (RandomGen g) => Int -> [a] -> g -> ([a], g)
+randomElements n xs g = foldl' (\(as, g') _ -> let (a, g'') = randomElement xs g' in (a : as, g'')) ([], g) [1 .. n]
 
 randomElementIO :: [a] -> IO a
 randomElementIO xs = do
@@ -392,10 +392,10 @@ randomElementIO xs = do
   setStdGen g'
   return a
 
-randomElementsIO :: [a] -> IO [a]
-randomElementsIO xs = do
+randomElementsIO :: Int -> [a] -> IO [a]
+randomElementsIO n xs = do
   g <- getStdGen
-  let (as, g') = randomElements xs g
+  let (as, g') = randomElements n xs g
   setStdGen g'
   return as
 
@@ -404,24 +404,12 @@ randomFromEnum g =
   let items = [minBound .. maxBound]
    in randomElement items g
 
-randomsFromEnum :: (RandomGen g, Enum a, Bounded a) => g -> ([a], g)
-randomsFromEnum g =
-  let items = [minBound .. maxBound]
-   in randomElements items g
-
 randomFromEnumIO :: (Enum a, Bounded a) => IO a
 randomFromEnumIO = do
   g <- getStdGen
   let (a, g') = randomFromEnum g
   setStdGen g'
   return a
-
-randomsFromEnumIO :: (Enum a, Bounded a) => IO [a]
-randomsFromEnumIO = do
-  g <- getStdGen
-  let (as, g') = randomsFromEnum g
-  setStdGen g'
-  return as
 
 shuffle :: (RandomGen g) => [a] -> g -> [a]
 shuffle xs = Shuffle.shuffle' xs (length xs)
