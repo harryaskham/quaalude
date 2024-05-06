@@ -14,7 +14,7 @@ class UnaryApply a b c where
 
 class Intersectable a where
   (∩) :: a -> a -> a
-  (⋂) :: (Foldable f) => Unary (f a -> a)
+  (⋂) :: (Foldable f) => () -> (f a -> a)
   (⋂) = const $ F.foldl1 (∩)
 
 data UnaryIntersect = Ⴖ
@@ -26,7 +26,7 @@ instance (Foldable f, Intersectable a) => UnaryApply UnaryIntersect (f a) a wher
 
 class Unionable a where
   (∪) :: a -> a -> a
-  (⋃) :: (Foldable f) => Unary (f a -> a)
+  (⋃) :: (Foldable f) => () -> (f a -> a)
   (⋃) = const $ F.foldl1 (∪)
 
 data UnaryUnion = Ս
@@ -76,7 +76,7 @@ instance forall a (f :: Type -> Type). (Foldable f) => UnaryApply (UnaryFold1 a)
 
 data UnaryForce = Λ
 
-instance UnaryApply UnaryForce (Unary a) a where
+instance UnaryApply UnaryForce (() -> a) a where
   (˙) Λ = ($ ())
 
 -- Below here: experimental use of operators in prefix mode using a placeholder on the left side.
@@ -85,9 +85,10 @@ instance UnaryApply UnaryForce (Unary a) a where
 ȣ = ()
 
 -- Type for enabling unary prefix ops that take a placeholder as first argument.
-type Unary a = () -> a
+-- Hidden as it causes confusing type errors
+-- type Unary a = () -> a
 
-ɾ :: a -> Unary a
+ɾ :: a -> () -> a
 ɾ a _ = a
 
 -- Partially applied u which resolves to a
@@ -102,6 +103,8 @@ class IsUnary u a where
   -- Prefix forcing
   λ :: u -> a
   λ = unary
+
+{-
 
 instance IsUnary (Unary a) a where
   unary f = f ()
@@ -177,3 +180,5 @@ testUnary =
       f :: Unary Bool
       f = (⋀ fmap λ [ɾ b, d, e])
    in λ f
+
+-}
