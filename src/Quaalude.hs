@@ -24,8 +24,7 @@ import Helper.Megaparsec as X
 import Helper.Records as X
 import Helper.TH as X
 import Helper.Tracers as X
--- Unary reexport stopped as the instances overlap too much
---import Helper.Unary as X
+import Helper.Unary as X
 import Helper.Util as X hiding (count)
 import Relude as X hiding (many, optional, (<|>))
 import System.IO.Unsafe as X
