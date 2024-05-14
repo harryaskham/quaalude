@@ -29,7 +29,7 @@ import System.Random (RandomGen, getStdGen, newStdGen, randomR, setStdGen)
 import System.Random.Shuffle qualified as Shuffle
 import Text.Megaparsec (Parsec, Stream, parseMaybe)
 import Text.Megaparsec.Char (digitChar)
-import Text.ParserCombinators.Parsec (Parser, char, count, eof, many1, noneOf, oneOf, parse, sepBy, try)
+import Text.ParserCombinators.Parsec (ParseError, Parser, char, count, eof, many1, noneOf, oneOf, parse, sepBy, try)
 
 -- Input parsing
 
@@ -70,20 +70,30 @@ parseWithIO parser path = parseWith parser . decodeUtf8 @String <$> readFileBS (
 
 parseWith :: Parser a -> String -> a
 parseWith parser body =
-  case parse parser "[input]" body of
+  case parseEitherWith parser body of
     Right x -> x
     Left e -> error (show e)
+
+parseEitherWith :: Parser a -> String -> Either ParseError a
+parseEitherWith parser = parse parser "[input]"
 
 parseLinesWith :: Parser a -> String -> [a]
 parseLinesWith line = parseWith $ many1 (line <* eol) <* eof
 
+(|-?) :: String -> Parser a -> Either ParseError a
+(|-?) = flip parseEitherWith
+
+infixl 5 |-?
+
 (|-) :: String -> Parser a -> a
 (|-) = flip parseWith
+
+infixl 5 |-
 
 (⊢) :: String -> Parser a -> a
 (⊢) = (|-)
 
-infixl 5 |-
+infixl 5 ⊢
 
 -- Show helpers
 
