@@ -45,6 +45,7 @@ common common-settings
                         aeson-casing,
                         barbies,
                         beam-core,
+                        beam-postgres,
                         req
     default-language:   Haskell2010
     mixins:             base hiding (Prelude),

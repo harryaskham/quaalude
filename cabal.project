@@ -1,7 +1,9 @@
 packages:
   ./quaalude.cabal
 
+allow-newer: beam-migrate:*
 allow-newer: beam-core:*
+allow-newer: beam-postgres:*
 
 package zlib
   extra-include-dirs: /Users/askham/.nix-profile/include
