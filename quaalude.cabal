@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               quaalude
-version:            0.1.0.0
+version:            0.2.0.0
 author:             Harry Askham
 maintainer:         harryaskham@gmail.com
 
@@ -112,15 +112,15 @@ library
     import:             common-settings
     hs-source-dirs:     src
     exposed-modules:    Quaalude
-    other-modules:      Helper.TH
-                        Helper.Bits
-                        Helper.Collection
-                        Helper.Grid
-                        Helper.Coord
-                        Helper.Tracers
-                        Helper.Alias
-                        Helper.Braket
-                        Helper.Unary
-                        Helper.Util
-                        Helper.Records
-                        Helper.Megaparsec
+    other-modules:      Quaalude.TH
+                        Quaalude.Bits
+                        Quaalude.Collection
+                        Quaalude.Grid
+                        Quaalude.Coord
+                        Quaalude.Tracers
+                        Quaalude.Alias
+                        Quaalude.Braket
+                        Quaalude.Unary
+                        Quaalude.Util
+                        Quaalude.Records
+                        Quaalude.Megaparsec

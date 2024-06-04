@@ -1,10 +1,10 @@
-module Helper.TH where
+module Quaalude.TH where
 
 import Data.FileEmbed (embedFile, makeRelativeToProject)
 import Data.Text qualified as T
-import Helper.Grid
-import Helper.Tracers
-import Helper.Util
+import Quaalude.Grid
+import Quaalude.Tracers
+import Quaalude.Util
   ( exampleInputNPath,
     exampleInputPath,
     inputPath,

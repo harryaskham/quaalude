@@ -2,7 +2,7 @@
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Helper.Util where
+module Quaalude.Util where
 
 import Control.Arrow (Arrow ((***)))
 import Control.Lens ((^.))
@@ -20,8 +20,8 @@ import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
 import Data.Type.Nat (Nat (S), Nat9)
-import Helper.Bits (bitsToInt)
-import Helper.Collection
+import Quaalude.Bits (bitsToInt)
+import Quaalude.Collection
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
@@ -64,7 +64,7 @@ readOne r text =
     Left e -> error (show e)
     Right (a, _) -> a
 
--- Helper utility for running a parser on a Text path
+-- Quaalude utility for running a parser on a Text path
 parseWithIO :: Parser a -> FilePath -> IO a
 parseWithIO parser path = parseWith parser . decodeUtf8 @String <$> readFileBS (toString path)
 

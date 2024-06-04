@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
-module Helper.Unary where
+module Quaalude.Unary where
 
 import Data.Foldable qualified as F
 

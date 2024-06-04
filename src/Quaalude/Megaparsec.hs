@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wno-missing-kind-signatures #-}
 
-module Helper.Megaparsec where
+module Quaalude.Megaparsec where
 
-import Helper.Util
+import Quaalude.Util
 import Replace.Megaparsec
 import Text.Megaparsec
 

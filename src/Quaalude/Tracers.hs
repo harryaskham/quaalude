@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
-module Helper.Tracers where
+module Quaalude.Tracers where
 
 import System.IO.Unsafe (unsafePerformIO)
 

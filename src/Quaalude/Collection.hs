@@ -1,7 +1,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Helper.Collection where
+module Quaalude.Collection where
 
 import Control.Lens (element, (.~))
 import Data.Array qualified as A
@@ -20,7 +20,7 @@ import Data.Sequence qualified as SQ
 import Data.Set qualified as S
 import Data.Text qualified as T
 import Data.Vector qualified as V
-import Helper.Unary
+import Quaalude.Unary
 import Relude.Unsafe qualified as U
 
 class Packable a b where

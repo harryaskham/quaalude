@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-kind-signatures #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Helper.Grid where
+module Quaalude.Grid where
 
 import Control.Monad.Memo.Vector (Vector)
 import Control.Monad.ST (ST, runST)
@@ -19,11 +19,11 @@ import Data.Map.Strict qualified as M
 import Data.Text qualified as T
 import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as STV
-import Helper.Collection
-import Helper.Coord
-import Helper.Tracers
-import Helper.Unary
-import Helper.Util (Nat10, both, bothM, unjust, (<$$>))
+import Quaalude.Collection
+import Quaalude.Coord
+import Quaalude.Tracers
+import Quaalude.Unary
+import Quaalude.Util (Nat10, both, bothM, unjust, (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 

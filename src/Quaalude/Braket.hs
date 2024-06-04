@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wno-missing-kind-signatures #-}
 
-module Helper.Braket where
+module Quaalude.Braket where
 
-import Helper.Alias
+import Quaalude.Alias
 
 data Braket a b = Braket a b
 

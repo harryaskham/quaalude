@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Helper.Bits where
+module Quaalude.Bits where
 
 import Data.Array.BitArray (BitArray)
 import Data.Array.BitArray qualified as BA

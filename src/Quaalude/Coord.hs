@@ -1,7 +1,7 @@
-module Helper.Coord where
+module Quaalude.Coord where
 
 import Data.Array
-import Helper.Collection
+import Quaalude.Collection
 import Text.Megaparsec (count')
 
 data Dir2 = DirUp | DirDown | DirLeft | DirRight deriving (Show, Eq, Ord, Enum, Bounded)

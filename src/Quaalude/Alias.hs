@@ -1,4 +1,4 @@
-module Helper.Alias where
+module Quaalude.Alias where
 
 import Data.Complex (Complex)
 

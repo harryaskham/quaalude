@@ -1,4 +1,4 @@
-module Helper.Records where
+module Quaalude.Records where
 
 import Data.Aeson.Casing (snakeCase)
 
