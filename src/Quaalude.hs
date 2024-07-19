@@ -24,6 +24,8 @@ import Quaalude.Megaparsec as X
 import Quaalude.Records as X
 import Quaalude.TH as X
 import Quaalude.Tracers as X
+-- WIP; import manually
+-- import Quaalude.Type as X
 -- Dangerous; import manually
 -- import Quaalude.Unary as X
 import Quaalude.Util as X hiding (count)

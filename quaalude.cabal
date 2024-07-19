@@ -119,6 +119,7 @@ library
                         Quaalude.Grid
                         Quaalude.Coord
                         Quaalude.Tracers
+                        Quaalude.Type
                         Quaalude.Alias
                         Quaalude.Braket
                         Quaalude.Util
