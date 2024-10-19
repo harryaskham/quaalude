@@ -256,11 +256,12 @@ eol = char '\n'
 whitespace :: Parser String
 whitespace = try . many1 $ char ' '
 
-number :: (Read a, Num a) => Parser a
+number :: (Read a) => Parser a
 number = do
-  sgn <- fromMaybe id <$> optionMaybe (char '-' $> negate)
-  n <- U.read <$> many1 (oneOf "-0123456789.")
-  return $ sgn n
+  nM <- readMaybe <$> many1 (oneOf "-0123456789.")
+  case nM of
+    Nothing -> fail "No parse in number"
+    Just n -> return n
 
 bitChar :: Parser Bool
 bitChar = (char '1' >> return True) <|> (char '0' >> return False)
