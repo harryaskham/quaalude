@@ -20,16 +20,16 @@ import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
 import Data.Type.Nat (Nat (S), Nat9)
+import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
-import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random (RandomGen, getStdGen, newStdGen, randomR, setStdGen)
 import System.Random.Shuffle qualified as Shuffle
 import Text.Megaparsec (Parsec, Stream, parseMaybe)
 import Text.Megaparsec.Char (digitChar)
-import Text.ParserCombinators.Parsec (ParseError, Parser, char, count, eof, many1, noneOf, oneOf, parse, sepBy, try)
+import Text.ParserCombinators.Parsec (ParseError, Parser, char, count, eof, many1, noneOf, oneOf, optionMaybe, parse, sepBy, try)
 
 -- Input parsing
 
@@ -256,8 +256,11 @@ eol = char '\n'
 whitespace :: Parser String
 whitespace = try . many1 $ char ' '
 
-number :: (Read a) => Parser a
-number = U.read <$> many1 (oneOf "-0123456789")
+number :: (Read a, Num a) => Parser a
+number = do
+  sgn <- fromMaybe id <$> optionMaybe (char '-' $> negate)
+  n <- U.read <$> many1 (oneOf "-0123456789.")
+  return $ sgn n
 
 bitChar :: Parser Bool
 bitChar = (char '1' >> return True) <|> (char '0' >> return False)
