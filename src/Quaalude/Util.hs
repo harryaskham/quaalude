@@ -90,6 +90,11 @@ infixl 5 |-?
 
 infixl 5 |-
 
+(|-..) :: String -> Parser a -> [a]
+(|-..) = flip parseLinesWith
+
+infixl 5 |-..
+
 (⊢) :: String -> Parser a -> a
 (⊢) = (|-)
 
