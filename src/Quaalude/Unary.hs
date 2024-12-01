@@ -42,7 +42,6 @@ instance forall a (f :: Type -> Type). (Foldable f, Num a) => UnaryApply UnaryFo
   (˙) Σ = sum
   (˙) Π = product
 
-
 -- Negation
 
 data UnaryNot = Ⴈ
@@ -98,6 +97,12 @@ class IsUnary u a where
   -- Prefix forcing
   λ :: u -> a
   λ = unary
+
+ⵉ :: forall a (f :: Type -> Type). (Foldable f, Num a) => f a -> a
+ⵉ = sum
+
+ꛛ :: forall a (f :: Type -> Type). (Foldable f, Num a) => f a -> a
+ꛛ = product
 
 {-
 

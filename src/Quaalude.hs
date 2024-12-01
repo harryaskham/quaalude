@@ -26,8 +26,7 @@ import Quaalude.TH as X
 import Quaalude.Tracers as X
 -- WIP; import manually
 -- import Quaalude.Type as X
--- Dangerous; import manually
--- import Quaalude.Unary as X
+import Quaalude.Unary as X
 import Quaalude.Util as X hiding (count)
 import Relude as X hiding (many, optional, (<|>))
 import System.IO.Unsafe as X
