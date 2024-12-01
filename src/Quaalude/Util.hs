@@ -181,6 +181,8 @@ split f = f *** f
 fanout :: (Arrow a) => a b c -> a b (c, c)
 fanout f = f &&& f
 
+f &.& g = bicomp . (f &&& g)
+
 -- Apply the given function only if the predicate holds on the input
 appWhen :: (a -> Bool) -> (a -> a) -> a -> a
 appWhen p f x
