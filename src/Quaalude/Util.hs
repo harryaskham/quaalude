@@ -100,6 +100,18 @@ infixl 5 |-..
 
 infixl 5 ⊢
 
+twoOf :: Parser a -> Parser (a, a)
+twoOf p = (,) <$> p <*> p
+
+spaceTab :: Parser Char
+spaceTab = oneOf " \t"
+
+spaceTabs :: Parser String
+spaceTabs = many spaceTab
+
+surrounding :: Parser a -> Parser b -> Parser b
+surrounding s p = s *> p <* s
+
 -- Show helpers
 
 class TShow a where
@@ -174,6 +186,28 @@ appWhen :: (a -> Bool) -> (a -> a) -> a -> a
 appWhen p f x
   | p x = f x
   | otherwise = x
+
+($@) :: (a -> b -> c) -> (a, b) -> c
+f $@ a = uncurry f a
+
+infixr 0 $@
+
+(&@) :: (a, b) -> (a -> b -> c) -> c
+(&@) = flip ($@)
+
+infixl 1 &@
+
+(&<@>) :: (Applicative f) => (f a, b) -> (a -> b -> c) -> f c
+(as, b) &<@> f = f <$> as <*> pure b
+
+infixl 1 &<@>
+
+bicomp :: (b -> c, a -> b) -> a -> c
+bicomp = uncurry (.)
+
+g .<. f = (g .) . f
+
+(.>.) = flip (.<.)
 
 -- Specific currying / conversions
 
@@ -389,6 +423,11 @@ type Nat10 = 'S Nat9
 unjust :: Maybe a -> a
 unjust (Just a) = a
 unjust Nothing = error "unjust Nothing"
+
+(?) :: Maybe a -> a -> a
+(?) = flip fromMaybe
+
+infixl 1 ?
 
 -- Tuple helpers
 
