@@ -15,7 +15,6 @@ import Data.Char (toLower)
 import Data.List (stripPrefix)
 import Data.Text qualified as T
 import Data.Typeable (Proxy (Proxy))
-import Database.Beam.Postgres
 import Deriving.Aeson
   ( CamelToSnake,
     CustomJSON,
@@ -26,7 +25,6 @@ import Deriving.Aeson
     SumUntaggedValue,
   )
 import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
-import Prelude hiding (One, Parser, insert, keys)
 
 -- Anything with a Prefix can be JSON'd
 -- This can be derived using: deriveJSONPrefixed ''Name
@@ -69,9 +67,3 @@ unsafeCoerceViaJSON :: forall b a. (ToJSON a, FromJSON b) => a -> b
 unsafeCoerceViaJSON a = case eitherDecode (encode a) of
   Left e -> error $ T.pack e
   Right b -> b
-
-instance (ToJSON a) => ToJSON (PgJSONB a) where
-  toJSON (PgJSONB a) = toJSON a
-
-instance (FromJSON a) => FromJSON (PgJSONB a) where
-  parseJSON a = PgJSONB <$> parseJSON a

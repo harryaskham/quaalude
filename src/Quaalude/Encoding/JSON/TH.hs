@@ -4,7 +4,6 @@ import Barbies
 import Barbies.Bare (Covered)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
-import Database.Beam.Schema.Tables (Nullable)
 import Deriving.Aeson (StringModifier)
 import Deriving.Aeson.Stock (PrefixedSnake)
 import Language.Haskell.TH (Dec, Name, Q, Type (VarT), conT, mkName)
