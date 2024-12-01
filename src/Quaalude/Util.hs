@@ -197,6 +197,10 @@ infixr 0 $@
 
 infixl 1 &@
 
+a &+> f = uncurry (zipWith f) a
+
+infixl 1 &+>
+
 (&<@>) :: (Applicative f) => (f a, b) -> (a -> b -> c) -> f c
 (as, b) &<@> f = f <$> as <*> pure b
 
