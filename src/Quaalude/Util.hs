@@ -486,3 +486,11 @@ shuffleIO xs = do
   g' <- newStdGen
   setStdGen g'
   return xs'
+
+-- Unary
+
+ⵉ :: forall a (f :: Type -> Type). (Foldable f, Num a) => f a -> a
+ⵉ = sum
+
+ꛛ :: forall a (f :: Type -> Type). (Foldable f, Num a) => f a -> a
+ꛛ = product
