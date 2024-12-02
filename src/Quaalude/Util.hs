@@ -19,7 +19,6 @@ import Data.Text qualified as T
 import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
-import Data.Type.Nat (Nat (S), Nat9)
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
@@ -181,7 +180,16 @@ split f = f *** f
 fanout :: (Arrow a) => a b c -> a b (c, c)
 fanout f = f &&& f
 
+bicomp :: (b -> c, a -> b) -> a -> c
+bicomp = uncurry (.)
+
 f &.& g = bicomp . (f &&& g)
+
+(⤊) = flip (uncurry . zipWith)
+
+(⇄) = flip flip
+
+infixl 4 <.>
 
 -- Apply the given function only if the predicate holds on the input
 appWhen :: (a -> Bool) -> (a -> a) -> a -> a
@@ -189,30 +197,13 @@ appWhen p f x
   | p x = f x
   | otherwise = x
 
-($@) :: (a -> b -> c) -> (a, b) -> c
-f $@ a = uncurry f a
+-- 2-ary . 1-ary in applicative
+f <.> g = (.) <$> f <*> g
 
-infixr 0 $@
-
-(&@) :: (a, b) -> (a -> b -> c) -> c
-(&@) = flip ($@)
-
-infixl 1 &@
-
-a &+> f = uncurry (zipWith f) a
-
-infixl 1 &+>
-
-(&<@>) :: (Applicative f) => (f a, b) -> (a -> b -> c) -> f c
-(as, b) &<@> f = f <$> as <*> pure b
-
-infixl 1 &<@>
-
-bicomp :: (b -> c, a -> b) -> a -> c
-bicomp = uncurry (.)
-
+-- 2-ary . 1-ary
 g .<. f = (g .) . f
 
+-- 1-ary . 2-ary
 (.>.) = flip (.<.)
 
 -- Specific currying / conversions
@@ -328,6 +319,9 @@ csv = many (noneOf ",\n") `sepBy` char ','
 countMap :: (Ord a) => [a] -> M.Map a Int
 countMap xs = M.fromListWith (+) (map (,1) xs)
 
+counts :: (Ord a) => [a] -> M.Map a Int
+counts = countMap
+
 adjustWithDefault :: (Ord k) => a -> (a -> a) -> k -> M.Map k a -> M.Map k a
 adjustWithDefault def f k m = case M.lookup k m of
   Nothing -> M.insert k (f def) m
@@ -420,6 +414,10 @@ unjust Nothing = error "unjust Nothing"
 (?) = flip fromMaybe
 
 infixl 1 ?
+
+-- op ? a = (((fromMaybe a) .) . flip op)
+--
+-- infixl 1 ?
 
 -- Tuple helpers
 

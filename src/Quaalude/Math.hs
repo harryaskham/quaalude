@@ -1,10 +1,10 @@
 module Quaalude.Math where
 
-class Diffable a b where
-  diff :: a -> b
+import Data.List qualified as L
+import Data.Type.Nat (Nat (S), Nat9)
 
-instance (Num a) => Diffable (a, a) a where
-  diff (a, b) = abs (a - b)
+diff :: (Num a) => a -> a -> a
+diff a b = abs (a - b)
 
 -- Generators
 
@@ -14,7 +14,7 @@ triangular n = n * (n + 1) `div` 2
 -- Stats
 
 median :: (Ord a) => [a] -> a
-median xs = sort xs !! (length xs `div` 2)
+median xs = sort xs L.!! (length xs `div` 2)
 
 mean :: (Integral a) => [a] -> a
 mean xs = sum xs `div` fromIntegral (length xs)
