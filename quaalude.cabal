@@ -116,8 +116,10 @@ library
                         Quaalude.Collection
                         Quaalude.Grid
                         Quaalude.Coord
+                        Quaalude.Math
                         Quaalude.Tracers
                         Quaalude.Type
+                        Quaalude.Tuple
                         Quaalude.Alias
                         Quaalude.Braket
                         Quaalude.Util

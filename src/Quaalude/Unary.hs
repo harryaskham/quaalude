@@ -10,6 +10,8 @@ import Data.Foldable qualified as F
 class UnaryApply a b c where
   (˙) :: a -> b -> c
 
+infixr 0 ˙
+
 -- Intersections
 
 class Intersectable a where
@@ -34,7 +36,7 @@ data UnaryUnion = Ս
 instance (Foldable f, Unionable a) => UnaryApply UnaryUnion (f a) a where
   (˙) Ս = F.foldl1 (∪)
 
--- N-ary boolean operations
+-- N-ary operations
 
 data UnaryFoldNum = Σ | Π
 

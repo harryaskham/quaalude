@@ -21,9 +21,10 @@ import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as STV
 import Quaalude.Collection
 import Quaalude.Coord
+import Quaalude.Math (Nat10)
 import Quaalude.Tracers
 import Quaalude.Unary
-import Quaalude.Util (Nat10, both, bothM, unjust, (<$$>))
+import Quaalude.Util (both, bothM, unjust, (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 

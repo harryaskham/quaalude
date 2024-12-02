@@ -412,20 +412,6 @@ permuteSet = S.map . (M.!)
 class Solution a b where
   toSolution :: a -> b
 
--- Mathy utils
-
--- nth triangular number
-triangular :: (Integral a) => a -> a
-triangular n = n * (n + 1) `div` 2
-
-median :: (Ord a) => [a] -> a
-median xs = sort xs !! (length xs `div` 2)
-
-mean :: (Integral a) => [a] -> a
-mean xs = sum xs `div` fromIntegral (length xs)
-
-type Nat10 = 'S Nat9
-
 unjust :: Maybe a -> a
 unjust (Just a) = a
 unjust Nothing = error "unjust Nothing"
