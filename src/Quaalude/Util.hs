@@ -22,13 +22,14 @@ import Data.Tuple.HT (uncurry3)
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
+import Quaalude.Unary
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random (RandomGen, getStdGen, newStdGen, randomR, setStdGen)
 import System.Random.Shuffle qualified as Shuffle
 import Text.Megaparsec (Parsec, Stream, parseMaybe)
 import Text.Megaparsec.Char (digitChar)
-import Text.ParserCombinators.Parsec (ParseError, Parser, char, count, eof, many1, noneOf, oneOf, optionMaybe, parse, sepBy, try)
+import Text.ParserCombinators.Parsec (ParseError, Parser, anyChar, char, choice, count, eof, lookAhead, many1, manyTill, noneOf, oneOf, optionMaybe, parse, sepBy, try)
 
 -- Input parsing
 
@@ -79,6 +80,9 @@ parseEitherWith parser = parse parser "[input]"
 parseLinesWith :: Parser a -> String -> [a]
 parseLinesWith line = parseWith $ many1 (line <* eol) <* eof
 
+parseLinesWith' :: Parser a -> String -> [a]
+parseLinesWith' line = fmap (parseWith (line <* eof) . T.unpack) . lines . T.pack
+
 (|-?) :: String -> Parser a -> Either ParseError a
 (|-?) = flip parseEitherWith
 
@@ -90,9 +94,14 @@ infixl 5 |-?
 infixl 5 |-
 
 (|-..) :: String -> Parser a -> [a]
-(|-..) = flip parseLinesWith
+(|-..) = flip parseLinesWith'
 
 infixl 5 |-..
+
+(|-<>) :: (UnMonoid m a, m ~ m' a) => String -> Parser m -> a
+s |-<> p = unMonoid . mconcat $ s |-.. (try p <|> (manyTill anyChar eof $> mempty))
+
+infixl 5 |-<>
 
 (⊢) :: String -> Parser a -> a
 (⊢) = (|-)
@@ -110,6 +119,15 @@ spaceTabs = many spaceTab
 
 surrounding :: Parser a -> Parser b -> Parser b
 surrounding s p = s *> p <* s
+
+wordOf :: Parser a -> Parser a
+wordOf p = spaceTabs `surrounding` p
+
+succeed :: a -> Parser a
+succeed a = lookAhead eof $> a
+
+trying :: [Parser a] -> Parser a
+trying ps = choice $ try <$> ps
 
 -- Show helpers
 

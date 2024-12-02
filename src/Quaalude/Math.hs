@@ -6,6 +6,15 @@ import Data.Type.Nat (Nat (S), Nat9)
 diff :: (Num a) => a -> a -> a
 diff a b = abs (a - b)
 
+diffs :: (Num a) => [a] -> [a]
+diffs xs = uncurry (-) <$> zip (drop 1 xs) xs
+
+sgn :: (Num a, Ord a) => a -> a
+sgn x
+  | x < 0 = -1
+  | x > 0 = 1
+  | otherwise = 0
+
 -- Generators
 
 triangular :: (Integral a) => a -> a

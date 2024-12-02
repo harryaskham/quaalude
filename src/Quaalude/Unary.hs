@@ -6,6 +6,12 @@ module Quaalude.Unary where
 
 import Data.Foldable qualified as F
 
+class (Monoid m) => UnMonoid m a where
+  unMonoid :: m -> a
+
+instance (Num a) => UnMonoid (Sum a) a where
+  unMonoid = getSum
+
 -- A class that enables application of datatypes
 class UnaryApply a b c where
   (˙) :: a -> b -> c
@@ -38,11 +44,50 @@ instance (Foldable f, Unionable a) => UnaryApply UnaryUnion (f a) a where
 
 -- N-ary operations
 
-data UnaryFoldNum = Σ | Π
+newtype Σ a = Σ {getΣ :: a} deriving (Show, Eq, Ord, Num)
 
-instance forall a (f :: Type -> Type). (Foldable f, Num a) => UnaryApply UnaryFoldNum (f a) a where
-  (˙) Σ = sum
-  (˙) Π = product
+instance (Num a) => Semigroup (Σ a) where
+  Σ a <> Σ b = Σ (a + b)
+
+instance (Num a, Semigroup (Σ a)) => Monoid (Σ a) where
+  mempty = Σ 0
+
+instance (Num a, Monoid (Σ a)) => UnMonoid (Σ a) a where
+  unMonoid = getΣ
+
+newtype Π a = Π {getΠ :: a} deriving (Show, Eq, Ord, Num)
+
+instance (Num a) => Semigroup (Π a) where
+  Π a <> Π b = Π (a * b)
+
+instance (Num a, Semigroup (Π a)) => Monoid (Π a) where
+  mempty = Π 1
+
+instance (Num a, Monoid (Π a)) => UnMonoid (Π a) a where
+  unMonoid = getΠ
+
+class ConsAlias u f a where
+  consAlias :: u -> (f a -> a)
+
+instance (Num a) => ConsAlias (Σ ()) [] a where
+  consAlias _ = sum
+
+instance (Num a) => ConsAlias (Π ()) [] a where
+  consAlias _ = product
+
+instance
+  forall x a (f :: Type -> Type).
+  (Foldable f, Num a) =>
+  UnaryApply (x -> Σ x) (f a) a
+  where
+  (˙) _ = sum
+
+instance
+  forall x a (f :: Type -> Type).
+  (Foldable f, Num a) =>
+  UnaryApply (x -> Π x) (f a) a
+  where
+  (˙) _ = product
 
 -- Negation
 

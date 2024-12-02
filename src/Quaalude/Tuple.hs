@@ -1,7 +1,7 @@
 module Quaalude.Tuple where
 
 type family NTuple (n :: Nat) a where
-  NTuple 0 a = ()
+  NTuple 0 _ = ()
   NTuple 1 a = a
   NTuple 2 a = (a, a)
   NTuple 3 a = (a, a, a)
@@ -13,7 +13,8 @@ type family NTuple (n :: Nat) a where
   NTuple 9 a = (a, a, a, a, a, a, a, a, a)
   NTuple 10 a = (a, a, a, a, a, a, a, a, a, a)
 
-type a × b = (a, b)
+type family a × b where
+  a × b = (a, b)
 
 class TupleCons a b c | a b -> c where
   tupleCons :: a -> b -> c
@@ -21,7 +22,7 @@ class TupleCons a b c | a b -> c where
   (×) :: a -> b -> c
   (×) = tupleCons
 
-instance TupleCons a b (a × b) where
+instance TupleCons a b (a, b) where
   (×) = (,)
 
 ($@) :: (a -> b -> c) -> (a, b) -> c
