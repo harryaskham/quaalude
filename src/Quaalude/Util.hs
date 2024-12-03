@@ -9,6 +9,7 @@ import Control.Lens ((^.))
 import Control.Monad (filterM)
 import Control.Monad.Random.Class
 import Data.Bitraversable
+import Data.HList hiding ((.<.))
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Monoid (Sum (Sum, getSum))
@@ -19,6 +20,7 @@ import Data.Text qualified as T
 import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
+import GHC.TypeLits
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
@@ -29,7 +31,26 @@ import System.Random (RandomGen, getStdGen, newStdGen, randomR, setStdGen)
 import System.Random.Shuffle qualified as Shuffle
 import Text.Megaparsec (Parsec, Stream, parseMaybe)
 import Text.Megaparsec.Char (digitChar)
-import Text.ParserCombinators.Parsec (ParseError, Parser, anyChar, char, choice, count, eof, lookAhead, many1, manyTill, noneOf, oneOf, optionMaybe, parse, sepBy, try)
+import Text.ParserCombinators.Parsec
+  ( ParseError,
+    Parser,
+    anyChar,
+    between,
+    char,
+    choice,
+    count,
+    eof,
+    lookAhead,
+    many1,
+    manyTill,
+    noneOf,
+    oneOf,
+    optionMaybe,
+    parse,
+    sepBy,
+    string,
+    try,
+  )
 
 -- Input parsing
 
@@ -98,8 +119,11 @@ infixl 5 |-
 
 infixl 5 |-..
 
-(|-<>) :: (UnMonoid m a, m ~ m' a) => String -> Parser m -> a
-s |-<> p = unMonoid . mconcat $ s |-.. (try p <|> (manyTill anyChar eof $> mempty))
+(|-<..>) :: (UnMonoid m a, m ~ m' a) => String -> Parser m -> a
+s |-<..> p = unMonoid . mconcat $ s |-.. (try p <|> (manyTill anyChar eof $> mempty))
+
+(|-<>) :: forall m a. (UnMonoid m a, Show m) => String -> Parser m -> a
+s |-<> p = unMonoid @m @a $ s |- (try p <|> (manyTill anyChar eof $> mempty))
 
 infixl 5 |-<>
 
@@ -123,11 +147,74 @@ surrounding s p = s *> p <* s
 wordOf :: Parser a -> Parser a
 wordOf p = spaceTabs `surrounding` p
 
+anyWord :: Parser String
+anyWord = wordOf (many1 (noneOf " \t\n\r"))
+
 succeed :: a -> Parser a
 succeed a = lookAhead eof $> a
 
 trying :: [Parser a] -> Parser a
 trying ps = choice $ try <$> ps
+
+parend :: Parser a -> Parser a
+parend = between (char '(') (char ')')
+
+type family CParsersF args where
+  CParsersF '[] = '[]
+  CParsersF (arg ': args) = Parser arg ': CParsersF args
+
+type family CFuncArgsF argParsers where
+  CFuncArgsF '[] = '[]
+  CFuncArgsF (Parser arg ': argParsers) = arg ': CFuncArgsF argParsers
+
+class CFuncArgs (argParsers :: [*]) where
+  cfuncArgs :: HList argParsers -> Parser (HList (CFuncArgsF argParsers))
+
+instance CFuncArgs '[] where
+  cfuncArgs _ = return HNil
+
+instance CFuncArgs '[Parser arg] where
+  cfuncArgs (HCons argParser HNil) = do
+    arg <- argParser
+    return $ arg .*. HNil
+
+instance (CFuncArgs (next ': argParsers)) => CFuncArgs (Parser arg ': next ': argParsers) where
+  cfuncArgs (HCons argParser rest) = do
+    arg <- argParser
+    char ','
+    rest <- cfuncArgs rest
+    return $ arg .*. rest
+
+data FnName = FnName {unFnName :: String}
+
+instance (KnownSymbol s) => IsLabel s FnName where
+  fromLabel = FnName (symbolVal (Proxy @s))
+
+cfunc ::
+  ( CFuncArgsF (CParsersF args) ~ args,
+    CFuncArgs (CParsersF args)
+  ) =>
+  FnName ->
+  HList (CParsersF args) ->
+  Parser (String, HList args)
+cfunc label argParsers =
+  (,) <$> string (unFnName label) <*> parend (cfuncArgs argParsers)
+
+cfunc_ ::
+  FnName ->
+  Parser String
+cfunc_ label =
+  string (unFnName label) <* string "()"
+
+cargs ::
+  forall args name.
+  ( CFuncArgs (CParsersF args),
+    CFuncArgsF (CParsersF args) ~ args
+  ) =>
+  FnName ->
+  HList (CParsersF args) ->
+  Parser (HList args)
+cargs label argParsers = snd <$> cfunc label argParsers
 
 -- Show helpers
 
@@ -334,10 +421,10 @@ csv = many (noneOf ",\n") `sepBy` char ','
 
 -- Map helpers
 
-countMap :: (Ord a) => [a] -> M.Map a Int
+countMap :: (Ord a, Integral n) => [a] -> M.Map a n
 countMap xs = M.fromListWith (+) (map (,1) xs)
 
-counts :: (Ord a) => [a] -> M.Map a Int
+counts :: (Ord a, Integral n) => [a] -> M.Map a n
 counts = countMap
 
 adjustWithDefault :: (Ord k) => a -> (a -> a) -> k -> M.Map k a -> M.Map k a

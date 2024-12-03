@@ -9,6 +9,7 @@ import Control.Monad.Memo as X hiding (isNothing)
 import Control.Monad.ST as X
 import Data.Distributive as X
 import Data.Either as X
+import Data.HList as X (HList (..), (.*.))
 import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, foldl', foldr, fromList, lookup, map, mapMaybe, null, size, split, splitAt, take, toList, (\\))
 import Data.PQueue.Prio.Min (deleteFindMin)
 import Data.Ratio as X

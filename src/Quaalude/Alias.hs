@@ -7,6 +7,8 @@ import Data.Complex (Complex)
 
 type ℤ' = Int
 
+type ℤ₆₄ = Int
+
 type ℤ = Integer
 
 type ℕ = Natural

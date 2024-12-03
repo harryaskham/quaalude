@@ -47,3 +47,6 @@ infixr 0 $<@>
 (&<@>) = flip ($<@>)
 
 infixl 1 &<@>
+
+dup :: a -> (a, a)
+dup a = (a, a)

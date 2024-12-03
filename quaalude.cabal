@@ -44,7 +44,8 @@ common common-settings
                         deriving-aeson,
                         aeson-casing,
                         barbies,
-                        req
+                        req,
+                        HList
     default-language:   Haskell2010
     mixins:             base hiding (Prelude),
                         relude (Relude as Prelude),

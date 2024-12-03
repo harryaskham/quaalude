@@ -10,6 +10,7 @@ import Data.ByteString.Lazy as BL (ByteString)
 import Data.ByteString.Lazy.Char8 as CL8 (pack, unpack)
 import Data.Char qualified as C
 import Data.Foldable qualified as F
+import Data.HList
 import Data.IntMap.Strict qualified as IM
 import Data.List qualified as L
 import Data.List.Extra qualified as LE
@@ -473,3 +474,10 @@ digitToInt = C.digitToInt
 
 intToDigit :: Int -> Char
 intToDigit = C.intToDigit
+
+(<%>) :: (Functor g, HMapOut f l e) => f -> g (HList l) -> g [e]
+f <%> xs = hMapOut f <$> xs
+
+hom f xs = f <$> (id <%> xs)
+
+hdup a = a .*. a .*. HNil

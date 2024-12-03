@@ -5,12 +5,47 @@
 module Quaalude.Unary where
 
 import Data.Foldable qualified as F
+import Data.HList
 
 class (Monoid m) => UnMonoid m a where
   unMonoid :: m -> a
 
 instance (Num a) => UnMonoid (Sum a) a where
   unMonoid = getSum
+
+instance (Num a) => UnMonoid (Product a) a where
+  unMonoid = getProduct
+
+instance (Num a) => UnMonoid [Σ [Π a]] a where
+  unMonoid = getΣ . mconcat . (fmap . fmap $ mconcat >>> getΠ)
+
+-- instance {-# OVERLAPPABLE #-} (Functor m, Functor m', UnMonoid (m' a) a, UnMonoid (m a) a) => UnMonoid [m' [m a]] a where
+--  unMonoid = (fmap . fmap $ unMonoid @(m a) @a . mconcat) >>> (unMonoid @(m' a) @a . mconcat)
+
+-- instance {-# OVERLAPPING #-} (UnMonoid (m a) b) => UnMonoid [m a] b where
+--   unMonoid = unMonoid . mconcat
+
+-- instance {-# OVERLAPPABLE #-} (UnMonoid a [b], UnMonoid b c) => UnMonoid a c where
+--   unMonoid = unMonoid @b @c . mconcat . unMonoid @a @[b]
+
+-- instance forall (m :: * -> *) a. (UnMonoid (m a) a) => UnMonoid (HList '[]) a where
+--   unMonoid _ = unMonoid (mempty @(m a))
+
+instance
+  ( UnMonoid (m a) a,
+    HProxiesFD mas (AddProxy mas),
+    SameLength' mas mas,
+    HList2List mas (m a),
+    HZipList rest rest zs,
+    SameLength rest zs,
+    SameLength (AddProxy rest) rest,
+    HMapAux HList ConstMempty (AddProxy rest) rest,
+    HMapAux HList UncurryMappend zs rest,
+    mas ~ (m a) ': rest
+  ) =>
+  UnMonoid (HList mas) a
+  where
+  unMonoid = unMonoid @(m a) @a . mconcat . hList2List @mas @(m a)
 
 -- A class that enables application of datatypes
 class UnaryApply a b c where
@@ -42,28 +77,36 @@ data UnaryUnion = Ս
 instance (Foldable f, Unionable a) => UnaryApply UnaryUnion (f a) a where
   (˙) Ս = F.foldl1 (∪)
 
--- N-ary operations
+-- Joint unary + N-ary operations
+-- i.e. Σ a operates like the sum monoid, but (Σ ˙) is the sum function
 
-newtype Σ a = Σ {getΣ :: a} deriving (Show, Eq, Ord, Num)
+newtype Σ a = Σ {getΣ :: a}
+  deriving newtype (Show, Eq, Ord, Read, Num)
+
+deriving instance Functor Σ
 
 instance (Num a) => Semigroup (Σ a) where
   Σ a <> Σ b = Σ (a + b)
 
-instance (Num a, Semigroup (Σ a)) => Monoid (Σ a) where
+instance (Num a) => Monoid (Σ a) where
   mempty = Σ 0
 
-instance (Num a, Monoid (Σ a)) => UnMonoid (Σ a) a where
+instance (Num a) => UnMonoid (Σ a) a where
   unMonoid = getΣ
 
-newtype Π a = Π {getΠ :: a} deriving (Show, Eq, Ord, Num)
+newtype Π a = Π {getΠ :: a}
+  deriving (Show)
+  deriving newtype (Eq, Ord, Read, Num)
+
+deriving instance Functor Π
 
 instance (Num a) => Semigroup (Π a) where
   Π a <> Π b = Π (a * b)
 
-instance (Num a, Semigroup (Π a)) => Monoid (Π a) where
+instance (Num a) => Monoid (Π a) where
   mempty = Π 1
 
-instance (Num a, Monoid (Π a)) => UnMonoid (Π a) a where
+instance (Num a) => UnMonoid (Π a) a where
   unMonoid = getΠ
 
 class ConsAlias u f a where
