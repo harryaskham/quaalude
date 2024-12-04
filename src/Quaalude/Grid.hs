@@ -769,3 +769,6 @@ wildEq wild k g
             | a == wild || b == wild || a == b = wild
             | otherwise = a
        in all (== wild) (cells (gridUnionWith f k g))
+
+x_x :: (Griddable Identity g k Char, GridUnionable (g k) Char) => g k Char -> g k Char -> Bool
+x_x = wildEq '_'

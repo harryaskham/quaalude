@@ -124,6 +124,7 @@ library
                         Quaalude.Tuple
                         Quaalude.Alias
                         Quaalude.Braket
+                        Quaalude.Variadic
                         Quaalude.Util
                         Quaalude.Records
                         Quaalude.Megaparsec

@@ -10,8 +10,8 @@ import Data.HList
 class (Monoid m) => UnMonoid m a where
   unMonoid :: m -> a
 
-(|=<) :: (Monad f, Foldable f, UnMonoid (m a) a) => (b -> f (m a)) -> f b -> a
-f |=< ms = unMonoid $ foldl' (<>) mempty $ f =<< ms
+(|=<) :: (Monoid (m a), Monad f, Foldable f) => (b -> f (m a)) -> f b -> m a
+f |=< ms = foldl' (<>) mempty $ f =<< ms
 
 infixr 1 |=<
 
