@@ -22,6 +22,7 @@ import Data.Vector as X (Vector)
 import Quaalude.Alias as X
 import Quaalude.Bits as X
 import Quaalude.Collection as X
+import Quaalude.Compose as X
 import Quaalude.Coord as X
 import Quaalude.Grid as X
 import Quaalude.Math as X

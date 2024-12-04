@@ -6,6 +6,7 @@ module Quaalude.Grid where
 import Control.Monad.Memo.Vector (Vector)
 import Control.Monad.ST (ST, runST)
 import Data.Array (assocs)
+import Data.Array qualified as A
 import Data.Array.IO (IOArray, getBounds, readArray)
 import Data.Array.MArray (MArray, getAssocs, newArray, newArray_, writeArray)
 import Data.Array.ST qualified as STA
@@ -256,6 +257,22 @@ instance (GridCell a) => Griddable Identity VectorGrid' Coord2 a where
   -- Need to modify this to support rotation
   maxXYM (VectorGrid g) = pure (V.length (g V.! 0) - 1, V.length g - 1)
   minXYM _ = pure (0, 0)
+
+newtype AGrid' k a = AGrid (A.Array k a) deriving (Eq)
+
+type AGrid a = AGrid' Coord2 a
+
+instance (Monad m, GridCell a) => Griddable m AGrid' Coord2 a where
+  mkGridM cs = return . AGrid $ A.array (minimum (fst <$> cs), maximum (fst <$> cs)) cs
+  unGridM (AGrid g) = return $ A.assocs g
+  gridGetMaybeM c@(x, y) (AGrid g) = do
+    let ((ax, ay), (bx, by)) = A.bounds g
+    if x < ax || y < ay || x > bx || y > by then return Nothing else Just <$> gridGetM c (AGrid g)
+  gridGetM c (AGrid g) = return $ g A.! c
+  gridSetM a c (AGrid g) = return . AGrid $ g A.// [(c, a)]
+  gridModifyM f c (AGrid g) = return . AGrid $ g A.// [(c, f (g A.! c))]
+  maxXYM (AGrid g) = return $ snd (A.bounds g)
+  minXYM (AGrid g) = return $ fst (A.bounds g)
 
 newtype ArrayGrid' k a = ArrayGrid (IOArray k a) deriving (Eq)
 
@@ -719,6 +736,11 @@ instance (Ord k) => GridUnionable (HashGrid' k) a where
 
 instance (Ord k) => GridUnionable (VectorGrid' k) a where
   gridUnionWith f (VectorGrid a) (VectorGrid b) = VectorGrid (V.zipWith (V.zipWith f) a b)
+
+instance (A.Ix k, Ord k) => GridUnionable (AGrid' k) a where
+  gridUnionWith f (AGrid a) (AGrid b) = AGrid (zipWithA f a b)
+    where
+      zipWithA f xs ys = A.listArray (A.bounds xs) [f (xs A.! i) (ys A.! i) | i <- A.range (A.bounds xs)]
 
 instance (Applicative m, GridUnionable (g k) a) => GridUnionable (MonoidalGrid m g k) a where
   gridUnionWith f a b = MonoidalGrid $ gridUnionWith @(g k) @a f <$> unMonoidalGrid a <*> unMonoidalGrid b

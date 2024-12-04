@@ -24,6 +24,7 @@ import GHC.TypeLits
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
+import Quaalude.Alias
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
 import Quaalude.Unary
@@ -311,8 +312,12 @@ f <.> g = (.) <$> f <*> g
 -- 2-ary . 1-ary
 g .<. f = (g .) . f
 
+infixl 4 .<.
+
 -- 1-ary . 2-ary
 (.>.) = flip (.<.)
+
+infixr 4 .>.
 
 -- Specific currying / conversions
 
@@ -584,3 +589,11 @@ shuffleIO xs = do
 -- Like [r||] but remove per-line trailing and leading whitespace
 txt :: QuasiQuoter
 txt = r {quoteExp = (quoteExp r) . T.unpack . T.unlines . fmap T.strip . T.lines . T.strip . T.pack}
+
+-- Conversion
+
+class As to from where
+  as :: from -> to
+
+instance As ℤ 𝔹 where
+  as from = bool 0 1 from

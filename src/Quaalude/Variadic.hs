@@ -1,69 +1,71 @@
 module Quaalude.Variadic where
 
 import GHC.TypeLits
+import Quaalude.Compose
 
--- type a *-> b = MakeVariadicF (a -> b)
+data a |=> b where
+  Variadic ::
+    (forall n. ToVariadic n a b) =>
+    (forall n. (ToVariadic n a b) => ToVariadicF n a [b]) ->
+    a |=> b
 
-type family MakeVariadicF (arity :: Nat) a b where
-  MakeVariadicF 0 _ b = [b]
-  MakeVariadicF arity a b = a -> MakeVariadicF (arity - 1) a b
+data a |=*-> b where
+  Variadicat ::
+    (forall n. ToVariadicConcat n a b) =>
+    (forall n. (ToVariadicConcat n a b) => ToVariadicF n a b) ->
+    a |=*-> b
 
-class MakeVariadic (arity :: Nat) a b where
-  makeVariadic :: (a -> b) -> MakeVariadicF arity a b
+type family VF ab n where
+  VF (a |=> b) n = ToVariadicF n a [b]
+  VF (a |=*-> b) n = ToVariadicF n a b
 
-class
-  ( MakeVariadic (arity :: Nat) a b,
-    ComposeN ([b] -> b) (MakeVariadicF arity a b),
-    Monoid b
-  ) =>
-  MakeVariadicConcat arity a b
-  where
-  makeVariadicConcat :: (a -> b) -> ComposeNF ([b] -> b) (MakeVariadicF arity a b)
-  default makeVariadicConcat :: (a -> b) -> ComposeNF ([b] -> b) (MakeVariadicF arity a b)
-  makeVariadicConcat f = composeN @([b] -> b) mconcat (makeVariadic @arity @a @b f)
+type family VC ab n :: Constraint where
+  VC (a |=> b) n = ToVariadic n a b
+  VC (a |=*-> b) n = ToVariadicConcat n a b
 
-instance
-  ( MakeVariadic (arity :: Nat) a b,
-    ComposeN ([b] -> b) (MakeVariadicF arity a b),
-    Monoid b
-  ) =>
-  MakeVariadicConcat arity a b
+type n -*=| ab = (VC ab n) => VF ab n
 
-instance {-# OVERLAPPING #-} MakeVariadic 0 a b where
-  makeVariadic _ = [] :: [b]
+infixr 0 -*=|
+
+type family ToVariadicF (arity :: Nat) a b where
+  ToVariadicF 0 _ b = b
+  ToVariadicF arity a b = ToVariadicF (arity - 1) a (a -> b)
+
+class ToVariadic (arity :: Nat) a b where
+  variadic :: (a -> b) -> ToVariadicF arity a [b]
+
+instance {-# OVERLAPPING #-} ToVariadic 0 a b where
+  variadic _ = [] :: [b]
 
 instance
   {-# OVERLAPPABLE #-}
-  ( MakeVariadic (n - 1) a b,
-    MakeVariadicF n a b ~ (a -> ComposeNF ([b] -> [b]) (MakeVariadicF (n - 1) a b)),
-    ComposeN ([b] -> [b]) (MakeVariadicF (n - 1) a b)
+  ( ToVariadic (n - 1) a b,
+    ToVariadicF n a [b] ~ (a -> ComposeNF ([b] -> [b]) (ToVariadicF (n - 1) a [b])),
+    ComposeN ([b] -> [b]) (ToVariadicF (n - 1) a [b])
   ) =>
-  MakeVariadic n a b
+  ToVariadic n a b
   where
-  makeVariadic fn a =
+  variadic fn a =
     let g = (fn a :)
-        f = makeVariadic @(n - 1) @a @b fn
+        f = variadic @(n - 1) @a @b fn
      in g `composeN` f
 
--- instance (MakeVariadic (n - 1) (a -> b)) => MakeVariadic n (a -> b) where
---   makeVariadic f = \a -> (f a :) >>> makeVariadic @(n - 1) @(a -> b) f
-
-type family ComposeNF g f where
-  ComposeNF (b -> c) (a -> b) = a -> c
-  ComposeNF (b -> c) b = c
-  ComposeNF (b -> c) (x -> a -> b) = x -> ComposeNF (b -> c) (a -> b)
-
-class ComposeN g f where
-  composeN :: g -> f -> ComposeNF g f
-
-instance ComposeN (b -> c) (a -> b) where
-  composeN = (.)
-
-instance (ComposeNF (b -> c) b ~ c) => ComposeN (b -> c) b where
-  composeN = ($)
+class
+  ( ToVariadic (arity :: Nat) a b,
+    ToVariadicF arity a b ~ ComposeNF ([b] -> b) (ToVariadicF arity a [b]),
+    ComposeN ([b] -> b) (ToVariadicF arity a [b]),
+    Monoid b
+  ) =>
+  ToVariadicConcat arity a b
+  where
+  variadicat :: (a -> b) -> ToVariadicF arity a b
+  default variadicat :: (a -> b) -> ToVariadicF arity a b
+  variadicat f = composeN @([b] -> b) mconcat (variadic @arity @a @b f)
 
 instance
-  ((ComposeNF (b -> c) (x -> a -> b)) ~ (x -> ComposeNF (b -> c) (a -> b))) =>
-  ComposeN (b -> c) (x -> a -> b)
-  where
-  composeN g f = \a -> composeN g (f a)
+  ( ToVariadic (arity :: Nat) a b,
+    ComposeN ([b] -> b) (ToVariadicF arity a [b]),
+    ToVariadicF arity a b ~ ComposeNF ([b] -> b) (ToVariadicF arity a [b]),
+    Monoid b
+  ) =>
+  ToVariadicConcat arity a b

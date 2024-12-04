@@ -64,6 +64,7 @@ common common-settings
                         MonadComprehensions,
                         UnicodeSyntax,
                         BlockArguments,
+                        TypeFamilyDependencies,
                         ImportQualifiedPost,
                         EmptyCase,
                         StarIsType,
@@ -127,4 +128,5 @@ library
                         Quaalude.Variadic
                         Quaalude.Util
                         Quaalude.Records
+                        Quaalude.Compose
                         Quaalude.Megaparsec
