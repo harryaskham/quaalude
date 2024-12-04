@@ -21,6 +21,8 @@ import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
 import GHC.TypeLits
+import Language.Haskell.TH
+import Language.Haskell.TH.Quote
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
@@ -51,6 +53,7 @@ import Text.ParserCombinators.Parsec
     string,
     try,
   )
+import Text.RawString.QQ
 
 -- Input parsing
 
@@ -575,3 +578,9 @@ shuffleIO xs = do
   g' <- newStdGen
   setStdGen g'
   return xs'
+
+-- Quoting
+
+-- Like [r||] but remove per-line trailing and leading whitespace
+txt :: QuasiQuoter
+txt = r {quoteExp = (quoteExp r) . T.unpack . T.unlines . fmap T.strip . T.lines . T.strip . T.pack}

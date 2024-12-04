@@ -12,6 +12,7 @@ import Data.Array.ST qualified as STA
 import Data.Bimap (Bimap)
 import Data.Bimap qualified as BM
 import Data.Fin (Fin)
+import Data.HashMap.Strict qualified as HM
 import Data.IntMap.Strict qualified as IM
 import Data.List (groupBy)
 import Data.List.Extra (groupOn)
@@ -24,7 +25,7 @@ import Quaalude.Coord
 import Quaalude.Math (Nat10)
 import Quaalude.Tracers
 import Quaalude.Unary
-import Quaalude.Util (both, bothM, unjust, (<$$>))
+import Quaalude.Util (both, bothM, unjust, (.<.), (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -39,6 +40,9 @@ unGrid = runIdentity . unGridM
 
 coords :: (Griddable Identity g k a) => g k a -> [k]
 coords = runIdentity . coordsM
+
+cells :: (Griddable Identity g k a) => g k a -> [a]
+cells = runIdentity . cellsM
 
 gridGetMaybe :: (Griddable Identity g k a) => k -> g k a -> Maybe a
 gridGetMaybe c g = runIdentity $ gridGetMaybeM c g
@@ -69,6 +73,9 @@ maxXY = runIdentity . maxXYM
 
 minXY :: (Griddable Identity g k a) => g k a -> (Int, Int)
 minXY = runIdentity . minXYM
+
+gridDims :: (Griddable Identity g k a) => g k a -> (Int, Int)
+gridDims = runIdentity . gridDimsM
 
 gridFind :: (Griddable Identity g k a) => a -> g k a -> [k]
 gridFind a g = runIdentity $ gridFindM a g
@@ -104,6 +111,8 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   unGridM :: g k a -> m [(k, a)]
   coordsM :: g k a -> m [k]
   coordsM g = fst <$$> unGridM g
+  cellsM :: g k a -> m [a]
+  cellsM g = snd <$$> unGridM g
   gridGetMaybeM :: k -> g k a -> m (Maybe a)
   (<||?>) :: g k a -> k -> m (Maybe a)
   (<||?>) = flip gridGetMaybeM
@@ -118,6 +127,11 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   g <||~> (c, f) = gridModifyM f c g
   maxXYM :: g k a -> m (Int, Int)
   minXYM :: g k a -> m (Int, Int)
+  gridDimsM :: g k a -> m (Int, Int)
+  gridDimsM g = do
+    (x0, y0) <- minXYM g
+    (x1, y1) <- maxXYM g
+    return (x1 - x0 + 1, y1 - y0 + 1)
   gridFindM :: a -> g k a -> m [k]
   gridFindM a g = (\cs -> [k | (k, v) <- cs, v == a]) <$> unGridM g
   gridFindOneM :: a -> g k a -> m k
@@ -198,6 +212,24 @@ instance (GridCell a) => Griddable Identity IntMapGrid' Coord2 a where
     (l', r') <- bothM unGridM (l, r)
     bothM mkGridM (l', r')
   gridMemberM (x, y) g = isJust <$> gridGetMaybeM (x, y) g
+
+newtype HashGrid' k a = HashGrid (HashMap k a) deriving (Eq, Ord, Show)
+
+type HashGrid = HashGrid' Coord2
+
+instance (GridCell a) => Griddable Identity HashGrid' Coord2 a where
+  mkGridM = pure . HashGrid . HM.fromList
+  unGridM (HashGrid g) = pure $ HM.toList g
+  gridGetMaybeM c (HashGrid g) = pure $ HM.lookup c g
+  gridGetM c (HashGrid g) = pure $ g HM.! c
+  gridSetM a c (HashGrid g) = pure . HashGrid $ HM.insert c a g
+  gridModifyM f c (HashGrid g) = pure . HashGrid $ HM.adjust f c g
+  maxXYM (HashGrid g) = pure (maximum $ fst <$> HM.keys g, maximum $ snd <$> HM.keys g)
+  minXYM (HashGrid g) = pure (minimum $ fst <$> HM.keys g, minimum $ snd <$> HM.keys g)
+  mapCoordsM f (HashGrid g) = pure . HashGrid $ HM.mapKeys f g
+  filterCoordsM f (HashGrid g) = pure . HashGrid $ HM.filterWithKey (\k _ -> f k) g
+  partitionCoordsM f (HashGrid g) = pure . both (HashGrid . mkHashMap . unMap) $ M.partitionWithKey (\k _ -> f k) $ mkMap . unHashMap $ g
+  gridMemberM c (HashGrid g) = pure $ HM.member c g
 
 newtype VectorGrid' k a = VectorGrid (V.Vector (V.Vector a)) deriving (Eq, Ord, Show)
 
@@ -433,6 +465,9 @@ newtype IntCell = IntCell Int deriving (Eq, Ord, Num, Show)
 instance GridCell IntCell where
   charMap = BM.fromList [(IntCell i, intToDigit i) | i <- [0 .. 9]]
 
+instance (Ord a, Integral a) => GridCell (Σ a) where
+  charMap = BM.fromList [(Σ i, intToDigit $ fromIntegral i) | i <- [0 .. 9]]
+
 readGridM :: (Griddable m g k a) => Text -> m (g k a)
 readGridM = toGridM . lines
 
@@ -502,6 +537,9 @@ variantsNubM g = nub <$> variantsM' g
 variantsNub :: (Griddable Identity g k a, Eq (g k a)) => g k a -> [g k a]
 variantsNub = runIdentity . variantsNubM
 
+rotations :: (Griddable Identity g k a, Eq (g k a)) => g k a -> [g k a]
+rotations = variants >>> pure >>> ([vId, r90, r180, r270] <*>)
+
 variantsM' :: (Griddable m g k a) => g k a -> m [g k a]
 variantsM' grid = do
   (maxX, _) <- maxXYM grid
@@ -556,13 +594,34 @@ prettyM grid = T.pack . intercalate "\n" <$> (fmap toChar <$$> gridLinesM grid)
 pretty :: (Griddable Identity g k a) => g k a -> Text
 pretty = runIdentity . prettyM
 
-convolve :: (Griddable Identity g Coord2 c, Griddable Identity g Coord2 d) => (Int, Int, Int, Int) -> (g Coord2 c -> d) -> g Coord2 c -> g Coord2 d
+convolve ::
+  ( Griddable Identity g Coord2 c,
+    Griddable Identity g Coord2 d
+  ) =>
+  (Int, Int, Int, Int) ->
+  (g Coord2 c -> d) ->
+  g Coord2 c ->
+  g Coord2 d
 convolve (u, d, l, r) f g =
   mkGrid
     [ (c, f g')
       | c@(x', y') <- coords g,
-        let g' = mapCoords (\(x, y) -> (x - x', y - y')) $ filterCoords (\(x, y) -> x >= x' - l && y >= y' - u && x <= x' + r && y <= y' + d) g
+        let g' =
+              mapCoords (\(x, y) -> (x - x', y - y')) $
+                filterCoords (\(x, y) -> x >= x' - l && y >= y' - u && x < x' + r && y < y' + d) g
     ]
+
+convolveWith ::
+  ( Griddable Identity g Coord2 c,
+    Griddable Identity g Coord2 d
+  ) =>
+  (g Coord2 c -> g Coord2 c -> d) ->
+  g Coord2 c ->
+  g Coord2 c ->
+  g Coord2 d
+convolveWith f kernel g =
+  let (w, h) = gridDims kernel
+   in convolve (0, h, 0, w) (f kernel) g
 
 data Perimeter k = Perimeter
   { pTop :: [k],
@@ -625,3 +684,88 @@ instance (Griddable Identity VectorGrid' k a) => Modifiable VectorGrid' k a wher
 
 instance (Griddable Identity VectorGrid' k a) => Memberable k (VectorGrid' k a) where
   a ∈ g = gridMember a g
+
+instance (Griddable Identity HashGrid' k a) => Gettable HashGrid' k a where
+  (|!) = (||!)
+
+instance (Griddable Identity HashGrid' k a) => MaybeGettable HashGrid' k a where
+  (|?) = (||?)
+
+instance (Griddable Identity HashGrid' k a) => Settable HashGrid' k a where
+  (|.) = (||.)
+
+instance (Griddable Identity HashGrid' k a) => Modifiable HashGrid' k a where
+  (|~) = (||~)
+
+instance (Griddable Identity HashGrid' k a) => Memberable k (HashGrid' k a) where
+  a ∈ g = gridMember a g
+
+class GridUnionable g a where
+  gridUnionL :: g a -> g a -> g a
+  gridUnionL = gridUnionWith const
+
+  gridUnionR :: g a -> g a -> g a
+  gridUnionR = gridUnionWith (flip const)
+
+  gridUnionWith :: (a -> a -> a) -> g a -> g a -> g a
+
+newtype MonoidalGrid m g k a = MonoidalGrid {unMonoidalGrid :: m (g k a)}
+
+instance (Ord k) => GridUnionable (Grid' k) a where
+  gridUnionWith f (Grid a) (Grid b) = Grid (M.unionWith f a b)
+
+instance (Ord k) => GridUnionable (HashGrid' k) a where
+  gridUnionWith f (HashGrid a) (HashGrid b) = HashGrid (HM.unionWith f a b)
+
+instance (Ord k) => GridUnionable (VectorGrid' k) a where
+  gridUnionWith f (VectorGrid a) (VectorGrid b) = VectorGrid (V.zipWith (V.zipWith f) a b)
+
+instance (Applicative m, GridUnionable (g k) a) => GridUnionable (MonoidalGrid m g k) a where
+  gridUnionWith f a b = MonoidalGrid $ gridUnionWith @(g k) @a f <$> unMonoidalGrid a <*> unMonoidalGrid b
+
+instance (Semigroup a, Griddable m g k a, GridUnionable (MonoidalGrid m g k) a) => Semigroup (MonoidalGrid m g k a) where
+  (<>) = gridUnionWith (<>)
+
+instance (Monoid a, Griddable m g k a, Semigroup (MonoidalGrid m g k a)) => Monoid (MonoidalGrid m g k a) where
+  mempty = MonoidalGrid emptyGridM
+
+idMonoidalGridSconcat :: (Semigroup a, Semigroup (MonoidalGrid Identity g k a)) => g k a -> g k a -> g k a
+idMonoidalGridSconcat a b = runIdentity . unMonoidalGrid $ MonoidalGrid (pure a) <> MonoidalGrid (pure b)
+
+idMonoidalGridMempty :: forall g k a. (Monoid a, Monoid (MonoidalGrid Identity g k a)) => g k a
+idMonoidalGridMempty = runIdentity . unMonoidalGrid $ mempty @(MonoidalGrid Identity g k a)
+
+instance (Semigroup a, Semigroup (MonoidalGrid Identity Grid' k a)) => Semigroup (Grid' k a) where
+  (<>) = idMonoidalGridSconcat
+
+instance (Monoid a, Monoid (MonoidalGrid Identity Grid' k a)) => Monoid (Grid' k a) where
+  mempty = idMonoidalGridMempty
+
+instance (Unionable (g k a)) => Unionable (MonoidalGrid Identity g k a) where
+  a ∪ b = MonoidalGrid $ pure (runIdentity (unMonoidalGrid a) ∪ runIdentity (unMonoidalGrid b))
+
+instance (Intersectable (g k a)) => Intersectable (MonoidalGrid Identity g k a) where
+  a ∩ b = MonoidalGrid $ pure (runIdentity (unMonoidalGrid a) ∩ runIdentity (unMonoidalGrid b))
+
+instance (Griddable m g k a) => Griddable m (MonoidalGrid m g) k a where
+  mkGridM cs = return $ MonoidalGrid (mkGridM cs)
+  unGridM g = unGridM =<< unMonoidalGrid g
+  gridGetMaybeM k g = gridGetMaybeM k =<< unMonoidalGrid g
+  gridGetM k g = gridGetM k =<< unMonoidalGrid g
+  gridSetM a k g = return $ MonoidalGrid $ gridSetM a k =<< unMonoidalGrid g
+  gridModifyM f k g = return $ MonoidalGrid $ gridModifyM f k =<< unMonoidalGrid g
+  maxXYM g = maxXYM =<< unMonoidalGrid g
+  minXYM g = minXYM =<< unMonoidalGrid g
+  mapCoordsM f g = return $ MonoidalGrid $ mapCoordsM f =<< unMonoidalGrid g
+  filterCoordsM f g = return $ MonoidalGrid $ filterCoordsM f =<< unMonoidalGrid g
+  partitionCoordsM f g = both (MonoidalGrid . return) <$> (partitionCoordsM @m @g @k @a f =<< unMonoidalGrid g)
+  gridMemberM k g = gridMemberM @m @g @k @a k =<< unMonoidalGrid g
+
+wildEq :: (GridCell a, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
+wildEq wild k g
+  | gridDims k /= gridDims g = False
+  | otherwise =
+      let f a b
+            | a == wild || b == wild || a == b = wild
+            | otherwise = a
+       in all (== wild) (cells (gridUnionWith f k g))

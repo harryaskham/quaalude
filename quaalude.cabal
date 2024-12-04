@@ -42,6 +42,7 @@ common common-settings
                         hashable,
                         aeson,
                         deriving-aeson,
+                        raw-strings-qq,
                         aeson-casing,
                         barbies,
                         req,

@@ -10,11 +10,19 @@ import Data.HList
 class (Monoid m) => UnMonoid m a where
   unMonoid :: m -> a
 
+(|=<) :: (Monad f, Foldable f, UnMonoid (m a) a) => (b -> f (m a)) -> f b -> a
+f |=< ms = unMonoid $ foldl' (<>) mempty $ f =<< ms
+
+infixr 1 |=<
+
 instance (Num a) => UnMonoid (Sum a) a where
   unMonoid = getSum
 
 instance (Num a) => UnMonoid (Product a) a where
   unMonoid = getProduct
+
+instance (Num a, Monoid (m a), UnMonoid (m a) a) => UnMonoid [m a] a where
+  unMonoid = unMonoid . mconcat
 
 instance (Num a) => UnMonoid [Σ [Π a]] a where
   unMonoid = getΣ . mconcat . (fmap . fmap $ mconcat >>> getΠ)
@@ -81,7 +89,8 @@ instance (Foldable f, Unionable a) => UnaryApply UnaryUnion (f a) a where
 -- i.e. Σ a operates like the sum monoid, but (Σ ˙) is the sum function
 
 newtype Σ a = Σ {getΣ :: a}
-  deriving newtype (Show, Eq, Ord, Read, Num)
+  deriving (Show)
+  deriving newtype (Eq, Ord, Read, Num, Integral, Real, Enum)
 
 deriving instance Functor Σ
 
@@ -96,7 +105,7 @@ instance (Num a) => UnMonoid (Σ a) a where
 
 newtype Π a = Π {getΠ :: a}
   deriving (Show)
-  deriving newtype (Eq, Ord, Read, Num)
+  deriving newtype (Eq, Ord, Read, Num, Integral, Real, Enum)
 
 deriving instance Functor Π
 

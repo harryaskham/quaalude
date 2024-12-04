@@ -14,6 +14,9 @@ import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, 
 import Data.PQueue.Prio.Min (deleteFindMin)
 import Data.Ratio as X
 import Data.Sequence (Seq (..))
+-- WIP; import manually
+-- import Quaalude.Type as X
+
 import Data.Tuple.Extra as X (fst3, snd3, thd3)
 import Data.Vector as X (Vector)
 import Quaalude.Alias as X
@@ -27,10 +30,9 @@ import Quaalude.Records as X
 import Quaalude.TH as X
 import Quaalude.Tracers as X
 import Quaalude.Tuple as X
--- WIP; import manually
--- import Quaalude.Type as X
 import Quaalude.Unary as X
 import Quaalude.Util as X hiding (count)
 import Relude as X hiding (many, optional, (<|>))
 import System.IO.Unsafe as X
 import Text.ParserCombinators.Parsec as X hiding (State)
+import Text.RawString.QQ as X

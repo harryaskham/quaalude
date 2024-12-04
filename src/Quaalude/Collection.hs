@@ -11,6 +11,7 @@ import Data.ByteString.Lazy.Char8 as CL8 (pack, unpack)
 import Data.Char qualified as C
 import Data.Foldable qualified as F
 import Data.HList
+import Data.HashMap.Strict qualified as HM
 import Data.IntMap.Strict qualified as IM
 import Data.List qualified as L
 import Data.List.Extra qualified as LE
@@ -396,6 +397,15 @@ setConcatMap f s = setConcat $ setMap f s
 
 setFilter :: (a -> Bool) -> Set a -> Set a
 setFilter = S.filter
+
+mkHashMap :: (Hashable k) => [(k, v)] -> HashMap k v
+mkHashMap = HM.fromList
+
+unHashMap :: HashMap k v -> [(k, v)]
+unHashMap = HM.toList
+
+mkHashMapWith :: (Hashable k) => (v -> v -> v) -> [(k, v)] -> HashMap k v
+mkHashMapWith = HM.fromListWith
 
 mkMap :: (Ord k) => [(k, v)] -> Map k v
 mkMap = M.fromList
