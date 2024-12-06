@@ -206,25 +206,25 @@ class Sizable a where
   size :: (Integral i) => a -> i
 
 instance Sizable [a] where
-  size = L.length
+  size = fromIntegral . L.length
 
 instance Sizable (V.Vector a) where
-  size = V.length
+  size = fromIntegral . V.length
 
 instance Sizable (Set a) where
-  size = S.size
+  size = fromIntegral . S.size
 
 instance Sizable (Map k v) where
-  size = M.size
+  size = fromIntegral . M.size
 
 instance Sizable (Seq a) where
-  size = SQ.length
+  size = fromIntegral . SQ.length
 
 instance Sizable (PQ.MinPQueue k v) where
-  size = PQ.size
+  size = fromIntegral . PQ.size
 
 instance Sizable (A.Array i e) where
-  size = F.length
+  size = fromIntegral . F.length
 
 class Memberable a b where
   (∈) :: a -> b -> Bool
