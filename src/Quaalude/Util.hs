@@ -126,8 +126,15 @@ infixl 5 |-..
 (|-<..>) :: (UnMonoid m a, m ~ m' a) => String -> Parser m -> a
 s |-<..> p = unMonoid . mconcat $ s |-.. (try p <|> (manyTill anyChar eof $> mempty))
 
-(|-<>) :: forall m a. (UnMonoid m a, Show m) => String -> Parser m -> a
-s |-<> p = unMonoid @m @a $ s |- (try p <|> (manyTill anyChar eof $> mempty))
+infixl 5 |-<..>
+
+(|-<.>) :: forall m a. (UnMonoid m a, Show m) => String -> Parser m -> a
+s |-<.> p = unMonoid @m @a $ s |- (try p <|> (manyTill anyChar eof $> mempty))
+
+infixl 5 |-<.>
+
+(|-<>) :: (Monoid a) => String -> Parser [a] -> a
+s |-<> p = mconcat $ s |- p
 
 infixl 5 |-<>
 
@@ -162,6 +169,20 @@ trying ps = choice $ try <$> ps
 
 parend :: Parser a -> Parser a
 parend = between (char '(') (char ')')
+
+assocsSep :: Parser kvSep -> Parser itemSep -> Parser k -> Parser v -> Parser [(k, v)]
+assocsSep kvSep itemSep key value = many ((,) <$> (key <* kvSep) <*> (value <* itemSep))
+
+mapSep :: (Ord k) => Parser kvSep -> Parser itemSep -> Parser k -> Parser v -> Parser (Map k v)
+mapSep kvSep itemSep key value =
+  M.fromList <$> assocsSep kvSep itemSep key value
+
+mapSepWith :: (Ord k) => (v -> v -> v) -> Parser kvSep -> Parser itemSep -> Parser k -> Parser v -> Parser (Map k v)
+mapSepWith f kvSep itemSep key value =
+  M.fromListWith f <$> assocsSep kvSep itemSep key value
+
+mapcat :: (Ord k) => String -> Parser k -> Parser v -> Parser (Map k [v])
+mapcat kvSep key value = mapSepWith (<>) (string kvSep) eol key (pure <$> value)
 
 type family CParsersF args where
   CParsersF '[] = '[]
@@ -289,14 +310,24 @@ split f = f *** f
 fanout :: (Arrow a) => a b c -> a b (c, c)
 fanout f = f &&& f
 
+duping :: ((a, a) -> b) -> a -> b
+duping f = f . (\a -> (a, a))
+
 bicomp :: (b -> c, a -> b) -> a -> c
 bicomp = uncurry (.)
 
+biap :: (a -> b, a) -> b
+biap = uncurry ($)
+
 f &.& g = bicomp . (f &&& g)
 
-(⤊) = flip (uncurry . zipWith)
+f &$& g = biap . bimap f g
+
+(a, b) ⤊ f = zipWith f a b
 
 (⇄) = flip flip
+
+(⥢) = flip duping
 
 infixl 4 <.>
 
@@ -426,6 +457,15 @@ csvLine a = a `sepBy` char ',' <* (eol >> eof)
 
 csv :: Parser [String]
 csv = many (noneOf ",\n") `sepBy` char ','
+
+csvOf :: Parser a -> Parser [a]
+csvOf p = p `sepBy` char ','
+
+lineOf :: Parser a -> Parser a
+lineOf p = p <* eol
+
+linesOf :: Parser a -> Parser [a]
+linesOf p = many (lineOf p)
 
 -- Map helpers
 

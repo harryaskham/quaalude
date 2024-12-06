@@ -1,10 +1,14 @@
 module Quaalude.Coord where
 
 import Data.Array
+import Data.Default
 import Quaalude.Collection
 import Text.Megaparsec (count')
 
 data Dir2 = DirUp | DirDown | DirLeft | DirRight deriving (Show, Eq, Ord, Enum, Bounded)
+
+instance Default Dir2 where
+  def = DirUp
 
 instance Ix Dir2 where
   range (a, b) = [a .. b]
@@ -12,6 +16,9 @@ instance Ix Dir2 where
   inRange (a, b) c = c >= a && c <= b
 
 data Dir3 = D3xP | D3xN | D3yP | D3yN | D3zP | D3zN deriving (Show, Eq, Ord, Enum, Bounded)
+
+instance Default Dir3 where
+  def = D3xP
 
 udlrToDir2 :: Char -> Dir2
 udlrToDir2 'u' = DirUp

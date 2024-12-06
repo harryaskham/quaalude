@@ -3,6 +3,7 @@
 
 module Quaalude.Grid where
 
+import Control.Monad
 import Control.Monad.Memo.Vector (Vector)
 import Control.Monad.ST (ST, runST)
 import Data.Array (assocs)
@@ -12,6 +13,7 @@ import Data.Array.MArray (MArray, getAssocs, newArray, newArray_, writeArray)
 import Data.Array.ST qualified as STA
 import Data.Bimap (Bimap)
 import Data.Bimap qualified as BM
+import Data.Default
 import Data.Fin (Fin)
 import Data.HashMap.Strict qualified as HM
 import Data.IntMap.Strict qualified as IM
@@ -81,7 +83,7 @@ gridDims = runIdentity . gridDimsM
 gridFind :: (Griddable Identity g k a) => a -> g k a -> [k]
 gridFind a g = runIdentity $ gridFindM a g
 
-gridFindOne :: (Griddable Identity g k a) => a -> g k a -> k
+gridFindOne :: (Griddable Identity g k a) => a -> g k a -> Maybe k
 gridFindOne a g = runIdentity $ gridFindOneM a g
 
 fromCoords :: (Foldable f, Bounded a, Griddable Identity g k a) => a -> f k -> g k a
@@ -135,8 +137,12 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
     return (x1 - x0 + 1, y1 - y0 + 1)
   gridFindM :: a -> g k a -> m [k]
   gridFindM a g = (\cs -> [k | (k, v) <- cs, v == a]) <$> unGridM g
-  gridFindOneM :: a -> g k a -> m k
-  gridFindOneM a g = U.head <$> gridFindM a g
+  gridFindOneM :: a -> g k a -> m (Maybe k)
+  gridFindOneM a g = do
+    cs <- gridFindM a g
+    case cs of
+      [] -> return Nothing
+      (c : _) -> return $ Just c
   fromCoordsM :: (Foldable f, Bounded a) => a -> f k -> m (g k a)
   fromCoordsM def cs = do
     e <- emptyGridM
@@ -508,20 +514,59 @@ pointsM ps g = catMaybes <$> mapM (g <||?>) ps
 points :: (Griddable Identity g k a) => [k] -> g k a -> [a]
 points ps g = runIdentity $ pointsM ps g
 
-iterGridM :: (Griddable m g Coord2 a) => Dir2 -> g Coord2 a -> m [(Coord2, a)]
-iterGridM DirDown g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | x <- [0 .. mx]] | y <- [0 .. my]]
-iterGridM DirLeft g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | y <- [my, my - 1 .. 0]] | x <- [0 .. mx]]
-iterGridM DirRight g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | y <- [0 .. my]] | x <- [0 .. mx]]
-iterGridM DirUp g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | x <- [mx, mx - 1 .. 0]] | y <- [my, my - 1 .. 0]]
+class (Griddable m g k a) => IterGrid m g k d a where
+  iterGridM' :: d -> g k a -> m [(k, a)]
+  iterCoordsM' :: d -> g k a -> m [k]
+  default iterCoordsM' :: d -> g k a -> m [k]
+  iterCoordsM' d g = fst <$$> iterGridM' d g
+  iterCellsM' :: d -> g k a -> m [a]
+  default iterCellsM' :: d -> g k a -> m [a]
+  iterCellsM' d g = snd <$$> iterGridM' d g
 
-iterGrid :: (Griddable Identity g Coord2 a) => Dir2 -> g Coord2 a -> [(Coord2, a)]
-iterGrid d g = runIdentity $ iterGridM d g
+instance (Functor m, Griddable m g Coord2 a) => IterGrid m g Coord2 Dir2 a where
+  iterGridM' DirDown g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | x <- [0 .. mx]] | y <- [0 .. my]]
+  iterGridM' DirLeft g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | y <- [my, my - 1 .. 0]] | x <- [0 .. mx]]
+  iterGridM' DirRight g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | y <- [0 .. my]] | x <- [0 .. mx]]
+  iterGridM' DirUp g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | x <- [mx, mx - 1 .. 0]] | y <- [my, my - 1 .. 0]]
 
-iterCoordsM :: (Griddable m g Coord2 a) => Dir2 -> g Coord2 a -> m [Coord2]
-iterCoordsM d g = fst <$$> iterGridM d g
+iterGridM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => g k a -> m [(k, a)]
+iterGridM = iterGridM' (def @d)
 
-iterCoords :: (Griddable Identity g Coord2 a) => Dir2 -> g Coord2 a -> [Coord2]
-iterCoords d g = runIdentity $ iterCoordsM d g
+iterCoordsM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => g k a -> m [k]
+iterCoordsM = iterCoordsM' (def @d)
+
+iterCellsM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => g k a -> m [a]
+iterCellsM = iterCellsM' (def @d)
+
+iterGrid' :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a) => d -> g k a -> [(k, a)]
+iterGrid' d = runIdentity . iterGridM' d
+
+iterGrid :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => g k a -> [(k, a)]
+iterGrid = iterGrid' (def @d)
+
+iterCoords' :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a) => d -> g k a -> [k]
+iterCoords' d g = runIdentity $ iterCoordsM' d g
+
+iterCoords :: forall {m} {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => g k a -> [k]
+iterCoords = iterCoords' (def @d)
+
+foldGridM' :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a) => d -> (acc -> (k, a) -> m acc) -> acc -> g k a -> m acc
+foldGridM' d f init = foldM f init <=< iterGridM' d
+
+foldGridM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => (acc -> (k, a) -> m acc) -> acc -> g k a -> m acc
+foldGridM = foldGridM' (def @d)
+
+foldGrid :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => (acc -> (k, a) -> acc) -> acc -> g k a -> acc
+foldGrid f init = runIdentity . foldGridM @d ((return .) . f) init
+
+foldCoordsM' :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a) => d -> (acc -> k -> m acc) -> acc -> g k a -> m acc
+foldCoordsM' d f init = foldM f init <=< iterCoordsM' d
+
+foldCoordsM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => (acc -> k -> m acc) -> acc -> g k a -> m acc
+foldCoordsM = foldCoordsM' (def @d)
+
+foldCoords :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => (acc -> k -> acc) -> acc -> g k a -> acc
+foldCoords f init = runIdentity . foldCoordsM @d ((return .) . f) init
 
 cropXM :: (Griddable m g k a) => Int -> Int -> g k a -> m (g k a)
 cropXM i j g = do

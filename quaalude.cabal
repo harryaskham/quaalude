@@ -16,6 +16,7 @@ common common-settings
                         array,
                         extra,
                         split,
+                        data-default,
                         text,
                         containers,
                         unordered-containers,

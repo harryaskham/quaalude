@@ -7,6 +7,7 @@ where
 
 import Control.Monad.Memo as X hiding (isNothing)
 import Control.Monad.ST as X
+import Data.Default as X
 import Data.Distributive as X
 import Data.Either as X
 import Data.HList as X (HList (..), (.*.))

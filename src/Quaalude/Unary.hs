@@ -7,6 +7,13 @@ module Quaalude.Unary where
 import Data.Foldable qualified as F
 import Data.HList
 
+class a ? b
+
+infixl 4 ?
+
+type family Ѓ a f where
+  Ѓ a (?) = Maybe a
+
 class (Monoid m) => UnMonoid m a where
   unMonoid :: m -> a
 
@@ -24,8 +31,17 @@ instance (Num a) => UnMonoid (Product a) a where
 instance (Num a, Monoid (m a), UnMonoid (m a) a) => UnMonoid [m a] a where
   unMonoid = unMonoid . mconcat
 
-instance (Num a) => UnMonoid [Σ [Π a]] a where
+instance {-# OVERLAPPING #-} (Num a) => UnMonoid [Σ [Π a]] a where
   unMonoid = getΣ . mconcat . (fmap . fmap $ mconcat >>> getΠ)
+
+instance {-# OVERLAPPABLE #-} (UnMonoid a b, Monoid b) => UnMonoid [a] b where
+  unMonoid = mconcat . fmap unMonoid
+
+instance
+  (UnMonoid (m a) a, UnMonoid (m' a') a') =>
+  UnMonoid (m a, m' a') (a, a')
+  where
+  unMonoid = bimap unMonoid unMonoid
 
 -- instance {-# OVERLAPPABLE #-} (Functor m, Functor m', UnMonoid (m' a) a, UnMonoid (m a) a) => UnMonoid [m' [m a]] a where
 --  unMonoid = (fmap . fmap $ unMonoid @(m a) @a . mconcat) >>> (unMonoid @(m' a) @a . mconcat)

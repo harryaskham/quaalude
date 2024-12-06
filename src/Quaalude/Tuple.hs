@@ -1,5 +1,7 @@
 module Quaalude.Tuple where
 
+import Data.List qualified as L
+
 type family NTuple (n :: Nat) a where
   NTuple 0 _ = ()
   NTuple 1 a = a
@@ -50,3 +52,24 @@ infixl 1 &<@>
 
 dup :: a -> (a, a)
 dup a = (a, a)
+
+class Trifunctor (f :: Type -> Type -> Type -> Type) where
+  trimap :: (a -> a') -> (b -> b') -> (c -> c') -> f a b c -> f a' b' c'
+  third :: (c -> c') -> f a b c -> f a b c'
+  default third :: (c -> c') -> f a b c -> f a b c'
+  third = trimap id id
+
+instance Trifunctor (,,) where
+  trimap f g h (a, b, c) = (f a, g b, h c)
+
+class (Trifunctor f) => Thd f where
+  thd :: f a b c -> c
+
+instance Thd (,,) where
+  thd (_, _, c) = c
+
+class Middle f where
+  middle :: f a -> a
+
+instance Middle [] where
+  middle xs = xs L.!! (length xs `div` 2)
