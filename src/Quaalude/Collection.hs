@@ -203,7 +203,7 @@ unSet = S.toList
 (\\) = (S.\\)
 
 class Sizable a where
-  size :: a -> Int
+  size :: (Integral i) => a -> i
 
 instance Sizable [a] where
   size = L.length
