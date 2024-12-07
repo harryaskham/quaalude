@@ -131,6 +131,11 @@ a |-<..?!> p = mconcat (a |-..?! p)
 
 infixl 5 |-<..?!>
 
+(-|) :: Parser a -> String -> a
+(-|) = parseWith
+
+infixl 5 -|
+
 (|-) :: String -> Parser a -> a
 (|-) = flip parseWith
 
@@ -178,6 +183,12 @@ surrounding s p = s *> p <* s
 
 wordOf :: Parser a -> Parser a
 wordOf p = spaceTabs `surrounding` p
+
+wordsOf :: Parser a -> Parser [a]
+wordsOf p = many (wordOf p)
+
+numbers :: (Read a) => Parser [a]
+numbers = number `sepBy` (many1 (noneOf "-0123456789."))
 
 anyWord :: Parser String
 anyWord = wordOf (many1 (noneOf " \t\n\r"))
@@ -584,8 +595,17 @@ unjust :: Maybe a -> a
 unjust (Just a) = a
 unjust Nothing = error "unjust Nothing"
 
-(?) :: Maybe a -> a -> a
-(?) = flip fromMaybe
+type family QuestionableF a where
+  QuestionableF (Maybe a) = a
+
+type family QuestionableFR a where
+  QuestionableFR (Maybe a) = a
+
+class Questionable a where
+  (?) :: a -> QuestionableF a -> QuestionableFR a
+
+instance Questionable (Maybe a) where
+  (?) = flip fromMaybe
 
 infixl 1 ?
 

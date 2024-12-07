@@ -27,6 +27,11 @@ class TupleCons a b c | a b -> c where
 instance TupleCons a b (a, b) where
   (×) = (,)
 
+(<$@>) :: (Functor f) => (a -> b -> c) -> f (a, b) -> f c
+f <$@> a = uncurry f <$> a
+
+infixr 0 <$@>
+
 ($@) :: (a -> b -> c) -> (a, b) -> c
 f $@ a = uncurry f a
 
@@ -73,3 +78,6 @@ class Middle f where
 
 instance Middle [] where
   middle xs = xs L.!! (length xs `div` 2)
+
+snoc :: [a] -> (a, [a])
+snoc (x : xs) = (x, xs)
