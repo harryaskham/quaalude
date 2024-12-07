@@ -35,25 +35,37 @@ runAllDays =
 
 -- Literal inputs; use TH to embed the input at compile time
 
-input :: Int -> Q Exp
-input day = do
-  path <- makeRelativeToProject (inputPath day)
-  AppE (VarE 'decodeUtf8) <$> embedFile path
+class EmbedInput a where
+  input :: a -> Q Exp
 
-inputS :: Int -> Q Exp
+aoc :: Int -> Q Exp
+aoc = input @Int
+
+aocx :: Int -> Q Exp
+aocx = input @Example . Example
+
+aocxn :: Int -> Int -> Q Exp
+aocxn = (input @Example .) . ExampleN
+
+instance EmbedInput Int where
+  input day = do
+    path <- makeRelativeToProject (inputPath day)
+    AppE (VarE 'decodeUtf8) <$> embedFile path
+
+data Example = Example Int | ExampleN Int Int
+
+instance EmbedInput Example where
+  input (Example day) = do
+    path <- makeRelativeToProject (exampleInputPath day)
+    AppE (VarE 'decodeUtf8) <$> embedFile path
+  input (ExampleN day n) = do
+    path <- makeRelativeToProject (exampleInputNPath day n)
+    AppE (VarE 'decodeUtf8) <$> embedFile path
+
+inputS :: (EmbedInput a) => a -> Q Exp
 inputS day = AppE (VarE 'T.unpack) <$> input day
 
-exampleInput :: Int -> Q Exp
-exampleInput day = do
-  path <- makeRelativeToProject (exampleInputPath day)
-  AppE (VarE 'decodeUtf8) <$> embedFile path
-
-exampleInputN :: Int -> Int -> Q Exp
-exampleInputN day n = do
-  path <- makeRelativeToProject (exampleInputNPath day n)
-  AppE (VarE 'decodeUtf8) <$> embedFile path
-
-grid :: (Int -> Q Exp) -> Int -> Q Exp
+grid :: (EmbedInput a) => (a -> Q Exp) -> a -> Q Exp
 grid inputFn day = AppE (VarE 'readGrid) <$> inputFn day
 
 gridsT :: (Griddable Identity g k a) => T.Text -> [g k a]

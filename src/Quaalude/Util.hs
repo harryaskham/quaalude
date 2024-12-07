@@ -62,10 +62,10 @@ inputPath :: Int -> FilePath
 inputPath day = "input/" <> show day <> ".txt"
 
 exampleInputPath :: Int -> FilePath
-exampleInputPath day = "input/" <> show day <> "_example.txt"
+exampleInputPath day = "input/examples/" <> show day <> ".txt"
 
 exampleInputNPath :: Int -> Int -> FilePath
-exampleInputNPath day n = "input/" <> show day <> "_example_" <> show n <> ".txt"
+exampleInputNPath day n = "input/examples/" <> show day <> "_" <> show n <> ".txt"
 
 -- Parse input lines with the given Reader.
 -- If any error occurs, fail.
@@ -108,10 +108,28 @@ parseLinesWith line = parseWith $ many1 (line <* eol) <* eof
 parseLinesWith' :: Parser a -> String -> [a]
 parseLinesWith' line = fmap (parseWith (line <* eof) . T.unpack) . lines . T.pack
 
+parseLinesEitherWith :: Parser a -> String -> [Either ParseError a]
+parseLinesEitherWith line = fmap (parse (line <* eof) "[input]" . T.unpack) . lines . T.pack
+
 (|-?) :: String -> Parser a -> Either ParseError a
 (|-?) = flip parseEitherWith
 
 infixl 5 |-?
+
+(|-..?) :: String -> Parser a -> [Either ParseError a]
+(|-..?) = flip parseLinesEitherWith
+
+infixl 5 |-..?
+
+(|-..?!) :: String -> Parser a -> [a]
+a |-..?! p = rights $ parseLinesEitherWith p a
+
+infixl 5 |-..?!
+
+(|-<..?!>) :: (Monoid a) => String -> Parser a -> a
+a |-<..?!> p = mconcat (a |-..?! p)
+
+infixl 5 |-<..?!>
 
 (|-) :: String -> Parser a -> a
 (|-) = flip parseWith
@@ -135,6 +153,9 @@ infixl 5 |-<.>
 
 (|-<>) :: (Monoid a) => String -> Parser [a] -> a
 s |-<> p = mconcat $ s |- p
+
+(|-..<>) :: (Monoid a) => String -> Parser a -> a
+s |-..<> p = mconcat $ s |-.. p
 
 infixl 5 |-<>
 

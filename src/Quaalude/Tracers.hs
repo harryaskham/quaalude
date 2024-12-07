@@ -4,6 +4,8 @@
 module Quaalude.Tracers where
 
 import System.IO.Unsafe (unsafePerformIO)
+import Text.Parsec
+import Text.ParserCombinators.Parsec
 
 pauseId :: a -> a
 pauseId a = unsafePerformIO $ do
@@ -26,7 +28,7 @@ traceWhen :: Bool -> (a -> a) -> a -> a
 traceWhen True traceFn a = traceFn a
 traceWhen False _ a = a
 
-traceShowIdWhen :: Show a => (a -> Bool) -> a -> a
+traceShowIdWhen :: (Show a) => (a -> Bool) -> a -> a
 traceShowIdWhen p a
   | p a = traceShowId a
   | otherwise = a
@@ -35,8 +37,12 @@ traceUnless :: Bool -> (a -> a) -> a -> a
 traceUnless True _ a = a
 traceUnless False traceFn a = traceFn a
 
-traceShowF :: Show b => (a -> b) -> a -> a
+traceShowF :: (Show b) => (a -> b) -> a -> a
 traceShowF f a = traceShow (f a) a
 
 traceTextF :: (a -> Text) -> a -> a
 traceTextF f a = traceTextLn (f a) a
+
+ptrace :: Bool -> String -> Parser a -> Parser a
+ptrace True = parserTraced
+ptrace False = const id
