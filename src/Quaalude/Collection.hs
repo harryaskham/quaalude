@@ -335,6 +335,18 @@ instance (A.Ix i) => Modifiable A.Array i e where
     | i ∈ a = a A.// [(i, f (a |! i))]
     | otherwise = a
 
+class Keysable f k where
+  keys :: f -> [k]
+
+instance (Ord k) => Keysable (Map k v) k where
+  keys = M.keys
+
+class Valuesable f k v where
+  values :: f k v -> [v]
+
+instance Valuesable Map k v where
+  values = M.elems
+
 (∅) :: (Monoid a) => a
 (∅) = mempty
 
@@ -491,3 +503,27 @@ f <%> xs = hMapOut f <$> xs
 hom f xs = f <$> (id <%> xs)
 
 hdup a = a .*. a .*. HNil
+
+cartesian :: [a] -> [b] -> [(a, b)]
+cartesian = liftA2 (,)
+
+class Swappable f a b where
+  swap :: f a b -> f b a
+  default swap :: (Ord b, UnableKey f, MkableKey f) => f a b -> f b a
+  swap = mkKey . fmap Prelude.swap . unKey
+
+class SwapWithable f m a b where
+  swapWith :: (m a -> m a -> m a) -> f a b -> f b (m a)
+  default swapWith :: (Applicative m, Ord b, Monoid (m a), UnableKey f, MkWithable f) => (m a -> m a -> m a) -> f a b -> f b (m a)
+  swapWith f = mkWith f . fmap (second pure . Prelude.swap) . unKey
+
+instance (Ord k, Ord v) => Swappable Map k v
+
+instance (Ord k, Ord v, Applicative m, Monoid (m k)) => SwapWithable Map m k v
+
+swapcat :: (SwapWithable f m a b, Semigroup (m a)) => f a b -> f b (m a)
+swapcat = swapWith (<>)
+
+g <>. f = mconcat . g . f
+
+g <>∘ f = g <>. f

@@ -49,21 +49,25 @@ fromArrow2 '>' = DirRight
 fromArrow2 '<' = DirLeft
 fromArrow2 c = error $ "Invalid arrow: " <> show c
 
-type Coord2 = (Int, Int)
+type Coord2' a = (a, a)
+
+type Coord2 = Coord2' Int
 
 type Coord3 = (Int, Int, Int)
 
 type Coord4 = (Int, Int, Int, Int)
 
 class Coord a where
-  fromXY :: (Int, Int) -> a
-  toXY :: a -> (Int, Int)
-  mapXY :: ((Int, Int) -> (Int, Int)) -> a -> a
+  fromXY :: (Num i, Integral i) => (i, i) -> a
+  toXY :: (Num i, Integral i) => a -> (i, i)
+  mapXY :: (Num i, Integral i) => ((i, i) -> (i, i)) -> a -> a
 
-instance Coord Coord2 where
-  fromXY = id
-  toXY = id
-  mapXY f = f
+instance (Num i, Integral i) => Coord (i, i) where
+  fromXY (x, y) = (fromIntegral x, fromIntegral y)
+  toXY (a, b) = (fromIntegral a, fromIntegral b)
+  mapXY f (a, b) =
+    let (x, y) = f (fromIntegral a, fromIntegral b)
+     in (fromIntegral x, fromIntegral y)
 
 manhattan0 :: Coord2 -> Int
 manhattan0 = (+) <$> (abs . fst) <*> (abs . snd)

@@ -20,3 +20,18 @@ type ℝ = Double
 type ℂ = Complex ℝ
 
 type 𝔹 = Bool
+
+(∘) :: (b -> c) -> (a -> b) -> a -> c
+(∘) = (.)
+
+infixr 9 ∘
+
+(⋅) :: (Num a) => a -> a -> a
+(⋅) = (*)
+
+infixl 7 ⋅
+
+(≡) :: (Eq a) => a -> a -> Bool
+(≡) = (==)
+
+infix 4 ≡

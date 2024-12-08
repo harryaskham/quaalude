@@ -37,10 +37,20 @@ f $@ a = uncurry f a
 
 infixr 0 $@
 
+($$@) :: (a -> (a -> b)) -> a -> b
+f $$@ a = f a a
+
+infixr 0 $$@
+
 (&@) :: (a, b) -> (a -> b -> c) -> c
 (&@) = flip ($@)
 
 infixl 1 &@
+
+(&&@) :: a -> (a -> (a -> b)) -> b
+(&&@) = flip ($$@)
+
+infixl 1 &&@
 
 aps :: (Applicative f) => (a -> b -> c) -> f a -> b -> f c
 aps f as b = f <$> as <*> pure b
@@ -81,3 +91,11 @@ instance Middle [] where
 
 snoc :: [a] -> (a, [a])
 snoc (x : xs) = (x, xs)
+
+instance (Num a) => Num (a, a) where
+  (a, b) + (c, d) = (a + c, b + d)
+  (a, b) - (c, d) = (a - c, b - d)
+  (a, b) * (c, d) = (a * c, b * d)
+  abs (a, b) = (abs a, abs b)
+  signum (a, b) = (signum a, signum b)
+  fromInteger n = (fromInteger n, fromInteger n)

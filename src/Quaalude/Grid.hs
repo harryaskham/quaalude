@@ -71,13 +71,13 @@ gridModify f c g = runIdentity $ gridModifyM f c g
 (||~) :: (Griddable Identity g k a) => g k a -> (k, a -> a) -> g k a
 g ||~ (c, f) = gridModify f c g
 
-maxXY :: (Griddable Identity g k a) => g k a -> (Int, Int)
+maxXY :: (Griddable Identity g k a, Coord k) => g k a -> k
 maxXY = runIdentity . maxXYM
 
-minXY :: (Griddable Identity g k a) => g k a -> (Int, Int)
+minXY :: (Griddable Identity g k a, Coord k) => g k a -> k
 minXY = runIdentity . minXYM
 
-gridDims :: (Griddable Identity g k a) => g k a -> (Int, Int)
+gridDims :: (Griddable Identity g k a, Coord k) => g k a -> k
 gridDims = runIdentity . gridDimsM
 
 gridFind :: (Griddable Identity g k a) => a -> g k a -> [k]
@@ -128,13 +128,13 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   gridModifyM :: (a -> a) -> k -> g k a -> m (g k a)
   (<||~>) :: g k a -> (k, a -> a) -> m (g k a)
   g <||~> (c, f) = gridModifyM f c g
-  maxXYM :: g k a -> m (Int, Int)
-  minXYM :: g k a -> m (Int, Int)
-  gridDimsM :: g k a -> m (Int, Int)
+  maxXYM :: g k a -> m k
+  minXYM :: g k a -> m k
+  gridDimsM :: g k a -> m k
   gridDimsM g = do
-    (x0, y0) <- minXYM g
-    (x1, y1) <- maxXYM g
-    return (x1 - x0 + 1, y1 - y0 + 1)
+    (x0, y0) <- toXY <$> minXYM g
+    (x1, y1) <- toXY <$> maxXYM g
+    return $ fromXY (x1 - x0 + 1, y1 - y0 + 1)
   gridFindM :: a -> g k a -> m [k]
   gridFindM a g = (\cs -> [k | (k, v) <- cs, v == a]) <$> unGridM g
   gridFindOneM :: a -> g k a -> m (Maybe k)
@@ -177,15 +177,25 @@ newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord, Show)
 
 type Grid = Grid' Coord2
 
-instance (GridCell a) => Griddable Identity Grid' Coord2 a where
+instance (GridCell a, Coord k, Ord k) => Griddable Identity Grid' k a where
   mkGridM = pure . Grid . M.fromList
   unGridM (Grid g) = pure $ M.toList g
   gridGetMaybeM c (Grid g) = pure $ M.lookup c g
   gridGetM c (Grid g) = pure $ g M.! c
   gridSetM a c (Grid g) = pure . Grid $ M.insert c a g
   gridModifyM f c (Grid g) = pure . Grid $ M.adjust f c g
-  maxXYM (Grid g) = pure (maximum $ fst <$> M.keys g, maximum $ snd <$> M.keys g)
-  minXYM (Grid g) = pure (minimum $ fst <$> M.keys g, minimum $ snd <$> M.keys g)
+  maxXYM (Grid g) =
+    pure $
+      fromXY
+        ( maximum $ fst . toXY <$> M.keys g,
+          maximum $ snd . toXY <$> M.keys g
+        )
+  minXYM (Grid g) =
+    pure $
+      fromXY
+        ( minimum $ fst . toXY <$> M.keys g,
+          minimum $ snd . toXY <$> M.keys g
+        )
   mapCoordsM f (Grid g) = pure . Grid $ M.mapKeys f g
   filterCoordsM f (Grid g) = pure . Grid $ M.filterWithKey (\k _ -> f k) g
   partitionCoordsM f (Grid g) = pure . both Grid $ M.partitionWithKey (\k _ -> f k) g
@@ -442,7 +452,7 @@ instance (GridCell a) => Griddable IO IOVectorGrid' Coord2 a where
   maxXYM (IOVectorGrid g) = do
     maxX <- (STV.length <$> STV.read g 0) <&> subtract 1
     let maxY = STV.length g - 1
-    return (maxX, maxY)
+    return $ fromXY (maxX, maxY)
   minXYM _ = return (0, 0)
 
 -- To create a Cell, just supply a Bimap between char and cell
@@ -571,7 +581,7 @@ foldCoords f init = runIdentity . foldCoordsM @d ((return .) . f) init
 cropXM :: (Griddable m g k a) => Int -> Int -> g k a -> m (g k a)
 cropXM i j g = do
   g' <- filterCoordsM (\c -> let (x, _) = toXY c in x >= i && x < j) g
-  xO <- fst <$> minXYM g'
+  xO <- fst . toXY <$> minXYM g'
   mapCoordsM (mapXY $ first (subtract xO)) g'
 
 cropX :: (Griddable Identity g k a) => Int -> Int -> g k a -> g k a
@@ -579,13 +589,13 @@ cropX i j g = runIdentity $ cropXM i j g
 
 modifyCoordsM :: (Griddable m g k a) => (k -> k) -> g k a -> m (g k a)
 modifyCoordsM f g = do
-  (maxX, maxY) <- maxXYM g
+  (maxX, maxY) <- toXY <$> maxXYM g
   let xO = (maxX + 1) `div` 2
   let yO = (maxY + 1) `div` 2
   let toOrigin c = let (x, y) = toXY c in fromXY (x - xO, y - yO)
   let fromOrigin g =
         do
-          (minX, minY) <- minXYM g
+          (minX, minY) <- toXY <$> minXYM g
           mapCoordsM (\c -> let (x, y) = toXY c in fromXY (x - minX, y - minY)) g
   g' <- mapCoordsM (f . toOrigin) g
   fromOrigin g'
@@ -604,7 +614,7 @@ rotations = variants >>> pure >>> ([vId, r90, r180, r270] <*>)
 
 variantsM' :: (Griddable m g k a) => g k a -> m [g k a]
 variantsM' grid = do
-  (maxX, _) <- maxXYM grid
+  (maxX, _) <- toXY <$> maxXYM grid
   let isEven = even (maxX + 1)
       flipV (x, y) = (if isEven then negate x - 1 else negate x, y)
       flipH (x, y) = (x, if isEven then negate y - 1 else negate y)
@@ -643,8 +653,8 @@ variants = runIdentity . variantsM
 
 gridLinesM :: (Griddable m g k a) => g k a -> m [[a]]
 gridLinesM g = do
-  (minX, minY) <- minXYM g
-  (maxX, maxY) <- maxXYM g
+  (minX, minY) <- toXY <$> minXYM g
+  (maxX, maxY) <- toXY <$> maxXYM g
   sequence [sequence [g <||!> fromXY (x, y) | x <- [minX .. maxX]] | y <- [minY .. maxY]]
 
 gridLines :: (Griddable Identity g k a) => g k a -> [[a]]
@@ -828,7 +838,7 @@ instance (Griddable m g k a) => Griddable m (MonoidalGrid m g) k a where
   partitionCoordsM f g = both (MonoidalGrid . return) <$> (partitionCoordsM @m @g @k @a f =<< unMonoidalGrid g)
   gridMemberM k g = gridMemberM @m @g @k @a k =<< unMonoidalGrid g
 
-wildEq :: (GridCell a, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
+wildEq :: (Eq k, GridCell a, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
 wildEq wild k g
   | gridDims k /= gridDims g = False
   | otherwise =
@@ -837,5 +847,27 @@ wildEq wild k g
             | otherwise = a
        in all (== wild) (cells (gridUnionWith f k g))
 
-x_x :: (Griddable Identity g k Char, GridUnionable (g k) Char) => g k Char -> g k Char -> Bool
+x_x :: (Eq k, Griddable Identity g k Char, GridUnionable (g k) Char) => g k Char -> g k Char -> Bool
 x_x = wildEq '_'
+
+instance Unable (Grid' k) where
+  un (Grid g) = un g
+
+instance Convable (Grid' k a) (Map k a) where
+  co (Grid g) = g
+
+instance
+  ( Applicative m,
+    Monoid (m a),
+    Semigroup (m a),
+    Semigroup (m k),
+    Swappable Map k a,
+    SwapWithable Map m k a,
+    Ord k
+  ) =>
+  Convable (Map k a) (Map a (m k))
+  where
+  co = swapcat
+
+instance (Swappable Map k a, Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) where
+  co = swapcat . co @(Grid' k a) @(Map k a)

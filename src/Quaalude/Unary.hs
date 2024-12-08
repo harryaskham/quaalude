@@ -110,6 +110,9 @@ newtype Σ a = Σ {getΣ :: a}
 
 deriving instance Functor Σ
 
+instance Applicative Σ where
+  pure = Σ
+
 instance (Num a) => Semigroup (Σ a) where
   Σ a <> Σ b = Σ (a + b)
 
@@ -124,6 +127,11 @@ newtype Π a = Π {getΠ :: a}
   deriving newtype (Eq, Ord, Read, Num, Integral, Real, Enum)
 
 deriving instance Functor Π
+
+instance Applicative Π where
+  pure = Π
+
+deriving instance Monad Π
 
 instance (Num a) => Semigroup (Π a) where
   Π a <> Π b = Π (a * b)

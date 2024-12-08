@@ -38,6 +38,9 @@ runAllDays =
 class EmbedInput a where
   input :: a -> Q Exp
 
+grid :: (EmbedInput a) => (a -> Q Exp) -> a -> Q Exp
+grid grid day = AppE (VarE 'readGrid) <$> input day
+
 aoc :: Int -> Q Exp
 aoc = input @Int
 
@@ -64,9 +67,6 @@ instance EmbedInput Example where
 
 inputS :: (EmbedInput a) => a -> Q Exp
 inputS day = AppE (VarE 'T.unpack) <$> input day
-
-grid :: (EmbedInput a) => (a -> Q Exp) -> a -> Q Exp
-grid inputFn day = AppE (VarE 'readGrid) <$> inputFn day
 
 gridsT :: (Griddable Identity g k a) => T.Text -> [g k a]
 gridsT s = readGrid <$> T.splitOn "\n\n" s

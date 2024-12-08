@@ -324,6 +324,11 @@ iterateFix f a
   where
     a' = f a
 
+stabilize :: (Eq a) => (a -> a) -> [a] -> a
+stabilize f (x : xs) = go (f x) xs
+  where
+    go last (x : xs) = let x' = f x in if x' == last then last else go x' xs
+
 cycleGet :: (Ord a) => Int -> [a] -> a
 cycleGet n as =
   let go i (a : as) seen at
@@ -351,9 +356,14 @@ bicomp = uncurry (.)
 biap :: (a -> b, a) -> b
 biap = uncurry ($)
 
+fbiap :: (Functor f) => (a -> b, f a) -> f b
+fbiap = uncurry (<$>)
+
 f &.& g = bicomp . (f &&& g)
 
 f &$& g = biap . bimap f g
+
+f &<$>& g = fbiap . bimap f g
 
 (a, b) ⤊ f = zipWith f a b
 
@@ -515,15 +525,6 @@ adjustWithDefault def f k m = case M.lookup k m of
 adjustMany :: (Ord k) => (a -> a) -> [k] -> M.Map k a -> M.Map k a
 adjustMany f ks m = foldl' (flip (M.adjust f)) m ks
 
-swapMap :: (Ord b) => M.Map a b -> M.Map b a
-swapMap = M.fromList . fmap swap . M.toList
-
-swapMapList :: (Ord b) => M.Map a [b] -> M.Map b [a]
-swapMapList m = M.fromListWith (<>) [(b, [a]) | (a, bs) <- M.toList m, b <- bs]
-
-swapMapCollect :: (Ord b) => M.Map a b -> M.Map b [a]
-swapMapCollect = M.fromListWith (<>) . fmap (second pure . swap) . M.toList
-
 -- Set helpers
 
 insertMany :: (Ord a) => [a] -> Set a -> Set a
@@ -604,10 +605,16 @@ type family QuestionableFR a where
 class Questionable a where
   (?) :: a -> QuestionableF a -> QuestionableFR a
 
+infixl 1 ?
+
 instance Questionable (Maybe a) where
   (?) = flip fromMaybe
 
-infixl 1 ?
+(???) :: forall a. Bool -> a -> (a -> a)
+True ??? a = flip const a
+False ??? a = const a
+
+infixl 1 ???
 
 -- op ? a = (((fromMaybe a) .) . flip op)
 --
@@ -678,3 +685,6 @@ class As to from where
 
 instance As ℤ 𝔹 where
   as from = bool 0 1 from
+
+instance (Applicative f, As a b) => As (f a) b where
+  as = pure . as @a @b
