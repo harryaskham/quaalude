@@ -2,6 +2,7 @@ module Quaalude.Coord where
 
 import Data.Array
 import Data.Default
+import Data.Foldable qualified as F
 import Quaalude.Collection
 import Text.Megaparsec (count')
 
@@ -117,15 +118,24 @@ rlToTurn 'l' = turnCCW
 rlToTurn 'L' = turnCCW
 rlToTurn c = error $ "Invalid rl: " <> show c
 
-neighbors :: Coord2 -> [Coord2]
+class Neighbors (n :: Nat) f a g where
+  neighs :: a -> g -> f a
+
+instance (Num a, Monad f, Alternative f, Mkable f, Memberable (a, a) g) => Neighbors 4 f (a, a) g where
+  neighs c g = [n | n <- mk (neighborsNoDiags c), n ∈ g]
+
+instance (Num a, Monad f, Alternative f, Mkable f, Memberable (a, a) g) => Neighbors 8 f (a, a) g where
+  neighs c g = [n | n <- mk (neighbors c), n ∈ g]
+
+neighbors :: (Num a) => (a, a) -> [(a, a)]
 neighbors (x, y) =
-  [ (x + xO, y + yO)
+  [ (x + fromIntegral xO, y + fromIntegral yO)
     | xO <- [-1 .. 1],
       yO <- [-1 .. 1],
       xO /= 0 || yO /= 0
   ]
 
-neighborsNoDiags :: Coord2 -> [Coord2]
+neighborsNoDiags :: (Num a) => (a, a) -> [(a, a)]
 neighborsNoDiags (x, y) =
   [ (x + 1, y),
     (x - 1, y),

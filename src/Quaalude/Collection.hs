@@ -56,6 +56,9 @@ instance Mkable V.Vector where
 instance Mkable Seq where
   mk = mkSeq
 
+mk₁ :: (Mkable f) => a -> f a
+mk₁ = mk . pure
+
 class MkableKey f where
   mkKey :: (Ord k) => [(k, v)] -> f k v
 
@@ -485,17 +488,25 @@ emptySeq = SQ.empty
 (><) :: Seq a -> Seq a -> Seq a
 (><) = (SQ.><)
 
+pattern EE = SQ.Empty
+
 (>/<) :: (Eq a) => Seq a -> a -> Seq a
 s >/< a = foldl' (flip SQ.deleteAt) s (SQ.elemIndicesL a s)
 
 mkMinQ :: (Ord k) => [(k, a)] -> PQ.MinPQueue k a
 mkMinQ = PQ.fromList
 
+mkQ :: (Ord k) => [(k, a)] -> PQ.MinPQueue k a
+mkQ = PQ.fromList
+
 nullQ :: PQ.MinPQueue k a -> Bool
 nullQ = PQ.null
 
 (<!) :: (Ord k) => PQ.MinPQueue k a -> ((k, a), PQ.MinPQueue k a)
 (<!) = PQ.deleteFindMin
+
+(<!!) :: (Ord k) => PQ.MinPQueue k a -> (a, PQ.MinPQueue k a)
+(<!!) = first snd . PQ.deleteFindMin
 
 mkArray :: (A.Ix i) => (i, i) -> [(i, e)] -> A.Array i e
 mkArray = A.array
