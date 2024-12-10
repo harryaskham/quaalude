@@ -22,6 +22,7 @@ import Data.Sequence qualified as SQ
 import Data.Set qualified as S
 import Data.Text qualified as T
 import Data.Vector qualified as V
+import Quaalude.Alias
 import Quaalude.Unary
 import Relude.Unsafe qualified as U
 
@@ -309,6 +310,15 @@ instance (Ord k) => MaybeGettable Map k v where
 instance (A.Ix i) => MaybeGettable A.Array i e where
   a |? i = if i ∈ a then Just (a |! i) else Nothing
 
+class ValueGettable f k v where
+  (|?>) :: f -> v -> [k]
+
+instance (Eq a) => ValueGettable [a] Int a where
+  l |?> a = L.elemIndices a l
+
+instance (Ord k, Ord v) => ValueGettable (Map k v) k v where
+  m |?> v = swapcat m |? v ? []
+
 class Settable f k v where
   (|.) :: f k v -> (k, v) -> f k v
 
@@ -540,9 +550,5 @@ instance (Ord k, Ord v, Applicative m, Monoid (m k)) => SwapWithable Map m k v
 
 swapcat :: (SwapWithable f m a b, Semigroup (m a)) => f a b -> f b (m a)
 swapcat = swapWith (<>)
-
-g <>. f = mconcat . g . f
-
-g <>∘ f = g <>. f
 
 type MinQ = PQ.MinPQueue

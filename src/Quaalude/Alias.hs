@@ -1,9 +1,10 @@
 module Quaalude.Alias where
 
 import Data.Complex (Complex)
+import Data.Fin (Fin)
+import Quaalude.Math
 
-(⊥) :: a
-(⊥) = error "Reached ⊥"
+-- Numeric
 
 type ℤ' = Int
 
@@ -13,6 +14,8 @@ type ℤ = Integer
 
 type ℕ = Natural
 
+type ℕ₁₀ = Fin Nat10
+
 type ℚ = Rational
 
 type ℝ = Double
@@ -20,6 +23,14 @@ type ℝ = Double
 type ℂ = Complex ℝ
 
 type 𝔹 = Bool
+
+-- Functional
+
+bottom :: a
+bottom = (⊥)
+
+(⊥) :: a
+(⊥) = error "Reached ⊥"
 
 (∘) :: (b -> c) -> (a -> b) -> a -> c
 (∘) = (.)
@@ -30,6 +41,8 @@ infixr 9 ∘
 (⋅) = (*)
 
 infixl 7 ⋅
+
+-- Boolean
 
 (≡) :: (Eq a) => a -> a -> Bool
 (≡) = (==)
@@ -58,3 +71,40 @@ infixr 3 ∧
 (∨) = (||)
 
 infixr 2 ∨
+
+type family QuestionableF a where
+  QuestionableF (Maybe a) = a
+
+type family QuestionableFR a where
+  QuestionableFR (Maybe a) = a
+
+class Questionable a where
+  (?) :: a -> QuestionableF a -> QuestionableFR a
+
+infixl 1 ?
+
+instance Questionable (Maybe a) where
+  (?) = flip fromMaybe
+
+(???) :: forall a. Bool -> a -> (a -> a)
+True ??? a = flip const a
+False ??? a = const a
+
+infixl 1 ???
+
+-- Monoidal
+
+(<>.) :: (Monoid c) => (b -> [c]) -> (a -> b) -> (a -> c)
+g <>. f = mconcat . g . f
+
+infixr 9 <>.
+
+(<>∘) :: (Monoid c) => (b -> [c]) -> (a -> b) -> (a -> c)
+g <>∘ f = g <>. f
+
+infixr 9 <>∘
+
+(<>!) :: (Monoid a) => [a] -> a
+(<>!) = mconcat
+
+infixl 0 <>!

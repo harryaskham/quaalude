@@ -364,11 +364,16 @@ biap = uncurry ($)
 fbiap :: (Functor f) => (a -> b, f a) -> f b
 fbiap = uncurry (<$>)
 
+fbibind :: (Monad m) => (a -> m b, m a) -> m b
+fbibind = uncurry (=<<)
+
 f &.& g = bicomp . (f &&& g)
 
 f &$& g = biap . bimap f g
 
 f &<$>& g = fbiap . bimap f g
+
+f &=<<& g = fbibind . bimap f g
 
 (a, b) ⤊ f = zipWith f a b
 
@@ -385,17 +390,35 @@ appWhen p f x
   | otherwise = x
 
 -- 2-ary . 1-ary in applicative
+(<.>) :: (Applicative f) => f (b -> c) -> f (a -> b) -> f (a -> c)
 f <.> g = (.) <$> f <*> g
 
+(<∘>) :: (Applicative f) => f (b -> c) -> f (a -> b) -> f (a -> c)
+(<∘>) = (<.>)
+
+infix 4 <∘>
+
 -- 2-ary . 1-ary
+(.<.) :: (c -> d) -> (a -> b -> c) -> (a -> b -> d)
 g .<. f = (g .) . f
 
 infixl 4 .<.
 
+(∘<∘) :: (c -> d) -> (a -> b -> c) -> (a -> b -> d)
+(∘<∘) = (.<.)
+
+infixl 4 ∘<∘
+
 -- 1-ary . 2-ary
+(.>.) :: (a -> b -> c) -> (c -> d) -> (a -> b -> d)
 (.>.) = flip (.<.)
 
 infixr 4 .>.
+
+(∘>∘) :: (a -> b -> c) -> (c -> d) -> (a -> b -> d)
+(∘>∘) = (.>.)
+
+infixr 4 ∘>∘
 
 -- Specific currying / conversions
 
@@ -606,26 +629,6 @@ class Solution a b where
 unjust :: Maybe a -> a
 unjust (Just a) = a
 unjust Nothing = error "unjust Nothing"
-
-type family QuestionableF a where
-  QuestionableF (Maybe a) = a
-
-type family QuestionableFR a where
-  QuestionableFR (Maybe a) = a
-
-class Questionable a where
-  (?) :: a -> QuestionableF a -> QuestionableFR a
-
-infixl 1 ?
-
-instance Questionable (Maybe a) where
-  (?) = flip fromMaybe
-
-(???) :: forall a. Bool -> a -> (a -> a)
-True ??? a = flip const a
-False ??? a = const a
-
-infixl 1 ???
 
 -- op ? a = (((fromMaybe a) .) . flip op)
 --

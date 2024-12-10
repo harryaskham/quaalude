@@ -23,6 +23,7 @@ import Data.Map.Strict qualified as M
 import Data.Text qualified as T
 import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as STV
+import Quaalude.Alias
 import Quaalude.Collection
 import Quaalude.Coord
 import Quaalude.Math (Nat10)
@@ -176,6 +177,10 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
 newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord, Show)
 
 type Grid = Grid' Coord2
+
+type ℤ² = Grid' (ℤ, ℤ)
+
+type ℕ₁₀² = Grid' (ℕ₁₀, ℕ₁₀)
 
 instance (GridCell a, Coord k, Ord k) => Griddable Identity Grid' k a where
   mkGridM = pure . Grid . M.fromList
@@ -457,11 +462,15 @@ instance (GridCell a) => Griddable IO IOVectorGrid' Coord2 a where
 
 -- To create a Cell, just supply a Bimap between char and cell
 -- Or, one can override toChar and fromChar where there is some special logic
-class (Ord a) => GridCell a where
+class (Eq a) => GridCell a where
   charMap :: Bimap a Char
+
   fromChar :: Char -> a
+  default fromChar :: (Ord a) => Char -> a
   fromChar c = charMap BM.!> c
+
   toChar :: a -> Char
+  default toChar :: (Ord a) => a -> Char
   toChar a = charMap BM.! a
 
 data DotHash = Dot | Hash deriving (Eq, Ord, Bounded, Show)
@@ -490,8 +499,11 @@ cellToInt (DigitCell d) = toInteger d
 intToCell :: Int -> DigitCell
 intToCell d = DigitCell (fromInteger $ toInteger d)
 
+instance GridCell (Fin Nat10) where
+  charMap = BM.fromList [((fromIntegral i), (intToDigit i)) | i <- [0 .. 9]]
+
 instance GridCell DigitCell where
-  charMap = BM.fromList [(DigitCell (fromInteger i), intToDigit (fromIntegral i)) | i <- [0 .. 9]]
+  charMap = BM.map DigitCell (charMap @(Fin Nat10))
 
 newtype IntCell = IntCell Int deriving (Eq, Ord, Num, Show)
 
@@ -736,6 +748,9 @@ instance (Griddable Identity Grid' k a) => Gettable Grid' k a where
 instance (Griddable Identity Grid' k a) => MaybeGettable Grid' k a where
   (|?) = (||?)
 
+instance (Griddable Identity Grid' k a) => ValueGettable (Grid' k a) k a where
+  (|?>) = flip gridFind
+
 instance (Griddable Identity Grid' k a) => Settable Grid' k a where
   (|.) = (||.)
 
@@ -838,7 +853,7 @@ instance (Griddable m g k a) => Griddable m (MonoidalGrid m g) k a where
   partitionCoordsM f g = both (MonoidalGrid . return) <$> (partitionCoordsM @m @g @k @a f =<< unMonoidalGrid g)
   gridMemberM k g = gridMemberM @m @g @k @a k =<< unMonoidalGrid g
 
-wildEq :: (Eq k, GridCell a, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
+wildEq :: (Eq a, Eq k, GridCell a, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
 wildEq wild k g
   | gridDims k /= gridDims g = False
   | otherwise =
