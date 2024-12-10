@@ -577,5 +577,8 @@ instance Filterable [] a where
 instance Filterable Set a where
   filter = S.filter
 
+instance Filterable Seq a where
+  filter = SQ.filter
+
 instance Filterable (Map k) v where
   filter = M.filter
