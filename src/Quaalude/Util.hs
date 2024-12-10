@@ -55,6 +55,7 @@ import Text.ParserCombinators.Parsec
     try,
   )
 import Text.RawString.QQ
+import Prelude hiding (filter)
 
 -- Input parsing
 

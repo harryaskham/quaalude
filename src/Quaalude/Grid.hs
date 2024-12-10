@@ -32,6 +32,7 @@ import Quaalude.Unary
 import Quaalude.Util (both, bothM, unjust, (.<.), (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
+import Prelude hiding (filter)
 
 emptyGrid :: (Griddable Identity g k a) => g k a
 emptyGrid = runIdentity emptyGridM

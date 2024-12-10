@@ -25,6 +25,7 @@ import Data.Vector qualified as V
 import Quaalude.Alias
 import Quaalude.Unary
 import Relude.Unsafe qualified as U
+import Prelude hiding (filter)
 
 class Packable a b where
   pack :: a -> b
@@ -563,3 +564,18 @@ swapcat :: (SwapWithable f m a b, Semigroup (m a)) => f a b -> f b (m a)
 swapcat = swapWith (<>)
 
 type MinQ = PQ.MinPQueue
+
+class Filterable f a where
+  filter :: (a -> Bool) -> f a -> f a
+
+(|-?->) :: (Filterable f a) => (a -> Bool) -> f a -> f a
+(|-?->) = filter
+
+instance Filterable [] a where
+  filter = L.filter
+
+instance Filterable Set a where
+  filter = S.filter
+
+instance Filterable (Map k) v where
+  filter = M.filter
