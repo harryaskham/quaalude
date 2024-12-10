@@ -568,8 +568,8 @@ type MinQ = PQ.MinPQueue
 class Filterable f a where
   filter :: (a -> Bool) -> f a -> f a
 
-(|-?->) :: (Filterable f a) => (a -> Bool) -> f a -> f a
-(|-?->) = filter
+(|-?->) :: (Filterable f a) => f a -> (a -> Bool) -> f a
+(|-?->) = flip filter
 
 instance Filterable [] a where
   filter = L.filter
