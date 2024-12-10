@@ -35,3 +35,26 @@ infixl 7 ⋅
 (≡) = (==)
 
 infix 4 ≡
+
+(≢) :: (Eq a) => a -> a -> Bool
+(≢) = (/=)
+
+(≤) :: (Ord a) => a -> a -> Bool
+(≤) = (<=)
+
+infix 4 ≤
+
+(≥) :: (Ord a) => a -> a -> Bool
+(≥) = (>=)
+
+infix 4 ≥
+
+(∧) :: Bool -> Bool -> Bool
+(∧) = (&&)
+
+infixr 3 ∧
+
+(∨) :: Bool -> Bool -> Bool
+(∨) = (||)
+
+infixr 2 ∨

@@ -308,6 +308,11 @@ infixl 5 <&&>
 both :: (Bifunctor f) => (a -> b) -> f a a -> f b b
 both f = bimap f f
 
+(<:>) :: (Bifunctor f) => (a -> b) -> f a a -> f b b
+(<:>) = both
+
+infixl 5 <:>
+
 bothM :: (Bitraversable f, Monad m) => (a -> m b) -> f a a -> m (f b b)
 bothM f = bitraverse f f
 
@@ -581,6 +586,12 @@ duplicates xs = M.keys $ M.filter (> 1) (countMap xs)
 enumerate :: (Enum a) => [a]
 enumerate = enumFrom (toEnum 0)
 
+enum :: (Num a, Enum a) => [b] -> [(a, b)]
+enum = zip [0 ..]
+
+(..#) :: (Num a, Enum a) => [b] -> [(a, b)]
+(..#) = enum
+
 permutationMaps :: (Enum a, Ord a) => [Map a a]
 permutationMaps = M.fromList . zip enumerate <$> permutations enumerate
 
@@ -685,6 +696,9 @@ class As to from where
 
 instance As ℤ 𝔹 where
   as from = bool 0 1 from
+
+instance As ℤ ℤ₆₄ where
+  as = fromIntegral
 
 instance (Applicative f, As a b) => As (f a) b where
   as = pure . as @a @b

@@ -178,9 +178,6 @@ foldl1' = L.foldl1'
 foldr1 :: (a -> a -> a) -> [a] -> a
 foldr1 = L.foldr1
 
-delete :: (Eq a) => a -> [a] -> [a]
-delete = L.delete
-
 mkVec :: [a] -> V.Vector a
 mkVec = V.fromList
 
@@ -347,6 +344,23 @@ class Valuesable f k v where
 instance Valuesable Map k v where
   values = M.elems
 
+class Deletable m k where
+  delete :: k -> m -> m
+  default delete :: k -> m -> m
+  delete = flip (|\)
+  (|\) :: m -> k -> m
+  default (|\) :: m -> k -> m
+  (|\) = flip delete
+
+instance (Ord k) => Deletable (Map k v) k where
+  delete = M.delete
+
+instance (Ord a) => Deletable (Set a) a where
+  delete = S.delete
+
+instance (Eq a) => Deletable [a] a where
+  delete = L.delete
+
 (∅) :: (Monoid a) => a
 (∅) = mempty
 
@@ -512,6 +526,9 @@ class Swappable f a b where
   default swap :: (Ord b, UnableKey f, MkableKey f) => f a b -> f b a
   swap = mkKey . fmap Prelude.swap . unKey
 
+instance Swappable (,) a b where
+  swap = Prelude.swap
+
 class SwapWithable f m a b where
   swapWith :: (m a -> m a -> m a) -> f a b -> f b (m a)
   default swapWith :: (Applicative m, Ord b, Monoid (m a), UnableKey f, MkWithable f) => (m a -> m a -> m a) -> f a b -> f b (m a)
@@ -527,3 +544,5 @@ swapcat = swapWith (<>)
 g <>. f = mconcat . g . f
 
 g <>∘ f = g <>. f
+
+type MinQ = PQ.MinPQueue

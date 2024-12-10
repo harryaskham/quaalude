@@ -32,6 +32,11 @@ f <$@> a = uncurry f <$> a
 
 infixr 0 <$@>
 
+(=<<@) :: (Monad m) => (a -> b -> m c) -> m (a, b) -> m c
+f =<<@ a = uncurry f =<< a
+
+infixr 1 =<<@
+
 ($@) :: (a -> b -> c) -> (a, b) -> c
 f $@ a = uncurry f a
 
@@ -99,3 +104,9 @@ instance (Num a) => Num (a, a) where
   abs (a, b) = (abs a, abs b)
   signum (a, b) = (signum a, signum b)
   fromInteger n = (fromInteger n, fromInteger n)
+
+class TupDrop (n :: Nat) a b where
+  tupdrop :: a -> b
+
+instance TupDrop 1 (a, b, c) (a, b) where
+  tupdrop (a, b, _) = (a, b)
