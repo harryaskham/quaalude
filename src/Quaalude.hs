@@ -35,7 +35,7 @@ import Quaalude.Tuple as X
 import Quaalude.Unary as X
 import Quaalude.Util as X hiding (count)
 import Quaalude.Variadic as X
-import Relude as X hiding (filter, many, optional, swap, (<|>))
+import Relude as X hiding (drop, filter, many, optional, splitAt, swap, take, (<|>))
 import System.IO.Unsafe as X
 import Text.ParserCombinators.Parsec as X hiding (State)
 import Text.RawString.QQ as X

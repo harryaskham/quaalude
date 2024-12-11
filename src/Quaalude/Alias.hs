@@ -2,7 +2,7 @@ module Quaalude.Alias where
 
 import Data.Complex (Complex)
 import Data.Fin (Fin)
-import Quaalude.Math
+import Data.Type.Nat (Nat (S), Nat9)
 
 -- Numeric
 
@@ -13,6 +13,8 @@ type ℤ₆₄ = Int
 type ℤ = Integer
 
 type ℕ = Natural
+
+type Nat10 = 'S Nat9
 
 type ℕ₁₀ = Fin Nat10
 

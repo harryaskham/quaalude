@@ -25,7 +25,7 @@ import Data.Vector qualified as V
 import Quaalude.Alias
 import Quaalude.Unary
 import Relude.Unsafe qualified as U
-import Prelude hiding (filter)
+import Prelude hiding (drop, filter, splitAt, take)
 
 class Packable a b where
   pack :: a -> b
@@ -56,6 +56,8 @@ instance Mkable V.Vector where
 
 instance Mkable Seq where
   mk = mkSeq
+
+pattern Seq₁ a = a SQ.:<| SQ.Empty
 
 mk₁ :: (Mkable f) => a -> f a
 mk₁ = mk . pure
@@ -582,3 +584,27 @@ instance Filterable Seq a where
 
 instance Filterable (Map k) v where
   filter = M.filter
+
+class Takeable n f a where
+  take :: n -> f a -> f a
+
+instance (Integral n) => Takeable n [] a where
+  take n = L.take (fromIntegral n)
+
+instance (Integral n) => Takeable n SQ.Seq a where
+  take n = SQ.take (fromIntegral n)
+
+class Droppable n f a where
+  drop :: n -> f a -> f a
+
+instance (Integral n) => Droppable n [] a where
+  drop n = L.drop (fromIntegral n)
+
+instance (Integral n) => Droppable n Seq a where
+  drop n = SQ.drop (fromIntegral n)
+
+splitAt :: (Integral n, Takeable n f a, Droppable n f a) => n -> f a -> (f a, f a)
+splitAt n f = (take n f, drop n f)
+
+halve :: forall n f a. (Sizable (f a), Integral n, Takeable n f a, Droppable n f a) => f a -> (f a, f a)
+halve f = splitAt @n @f @a (size f) f

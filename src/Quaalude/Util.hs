@@ -42,6 +42,7 @@ import Text.ParserCombinators.Parsec
     char,
     choice,
     count,
+    digit,
     eof,
     lookAhead,
     many1,
@@ -55,7 +56,7 @@ import Text.ParserCombinators.Parsec
     try,
   )
 import Text.RawString.QQ
-import Prelude hiding (filter)
+import Prelude hiding (drop, filter, take)
 
 -- Input parsing
 
@@ -147,6 +148,11 @@ infixl 5 |-
 
 infixl 5 |-..
 
+(|-.) :: String -> Parser a -> a
+a |-. p = parseWith (p <* (optionMaybe eol >> eof)) a
+
+infixl 5 |-.
+
 (|-<..>) :: (UnMonoid m a, m ~ m' a) => String -> Parser m -> a
 s |-<..> p = unMonoid . mconcat $ s |-.. (try p <|> (manyTill anyChar eof $> mempty))
 
@@ -189,7 +195,12 @@ wordsOf :: Parser a -> Parser [a]
 wordsOf p = many (wordOf p)
 
 numbers :: (Read a) => Parser [a]
-numbers = number `sepBy` (many1 (noneOf "-0123456789."))
+numbers = number `sepBy` (many1 (try (noneOf "-0123456789.")))
+
+nat₁₀ :: forall a. (Integral a) => Parser a
+nat₁₀ = do
+  c <- digit
+  return . fromIntegral $ digitToInt c
 
 anyWord :: Parser String
 anyWord = wordOf (many1 (noneOf " \t\n\r"))
@@ -509,7 +520,7 @@ whitespace = try . many1 $ char ' '
 
 number :: (Read a) => Parser a
 number = do
-  nM <- readMaybe <$> many1 (oneOf "-0123456789.")
+  nM <- readMaybe <$> try (many1 (oneOf "-0123456789."))
   case nM of
     Nothing -> fail "No parse in number"
     Just n -> return n
