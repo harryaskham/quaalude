@@ -7,6 +7,7 @@ module Quaalude.Util where
 import Control.Arrow (Arrow ((***)))
 import Control.Lens ((^.))
 import Control.Monad (filterM)
+import Control.Monad.Memo
 import Control.Monad.Random.Class
 import Data.Bitraversable
 import Data.HList hiding ((.<.))
@@ -158,7 +159,7 @@ s |-<..> p = unMonoid . mconcat $ s |-.. (try p <|> (manyTill anyChar eof $> mem
 
 infixl 5 |-<..>
 
-(|-<.>) :: forall m a. (UnMonoid m a, Show m) => String -> Parser m -> a
+(|-<.>) :: forall m a. (UnMonoid m a) => String -> Parser m -> a
 s |-<.> p = unMonoid @m @a $ s |- (try p <|> (manyTill anyChar eof $> mempty))
 
 infixl 5 |-<.>
@@ -197,7 +198,7 @@ wordsOf p = many (wordOf p)
 numbers :: (Read a) => Parser [a]
 numbers = number `sepBy` (many1 (try (noneOf "-0123456789.")))
 
-nat₁₀ :: forall a. (Integral a) => Parser a
+nat₁₀ :: Parser ℕ₁₀
 nat₁₀ = do
   c <- digit
   return . fromIntegral $ digitToInt c
@@ -717,3 +718,20 @@ instance As ℤ ℤ₆₄ where
 
 instance (Applicative f, As a b) => As (f a) b where
   as = pure . as @a @b
+
+-- Memo
+
+data Mℤ k = Mℤ ℤ k deriving (Ord, Eq)
+
+type MM k v = Memo k v v
+
+type k .->. v = k -> MM k v
+
+(.$.) :: (Ord k) => (k .->. v) -> k -> MM k v
+(.$.) = memo
+
+class Runnable f where
+  run :: f a -> a
+
+instance Runnable (Memo k v) where
+  run = startEvalMemo

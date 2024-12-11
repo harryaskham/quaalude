@@ -607,4 +607,4 @@ splitAt :: (Integral n, Takeable n f a, Droppable n f a) => n -> f a -> (f a, f 
 splitAt n f = (take n f, drop n f)
 
 halve :: forall n f a. (Sizable (f a), Integral n, Takeable n f a, Droppable n f a) => f a -> (f a, f a)
-halve f = splitAt @n @f @a (size f) f
+halve f = splitAt @n @f @a (size f `div` 2) f

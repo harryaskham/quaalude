@@ -4,6 +4,7 @@
 
 module Quaalude.Unary where
 
+import Control.Monad.Memo
 import Data.Foldable qualified as F
 import Data.HList
 
@@ -27,6 +28,15 @@ instance (Num a) => UnMonoid (Sum a) a where
 
 instance (Num a) => UnMonoid (Product a) a where
   unMonoid = getProduct
+
+instance (Semigroup a) => Semigroup (Memo k v a) where
+  a <> b = (<>) <$> a <*> b
+
+instance (Monoid a) => Monoid (Memo k v a) where
+  mempty = return mempty
+
+instance (Monoid a) => UnMonoid (Memo k v a) a where
+  unMonoid = startEvalMemo
 
 instance (Num a, Monoid (m a), UnMonoid (m a) a) => UnMonoid [m a] a where
   unMonoid = unMonoid . mconcat
