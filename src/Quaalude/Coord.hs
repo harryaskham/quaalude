@@ -4,6 +4,7 @@ import Data.Array
 import Data.Default
 import Data.Foldable qualified as F
 import Quaalude.Collection
+import Quaalude.Tuple
 import Text.Megaparsec (count')
 
 data Dir2 = DirUp | DirDown | DirLeft | DirRight deriving (Show, Eq, Ord, Enum, Bounded)
@@ -121,11 +122,29 @@ rlToTurn c = error $ "Invalid rl: " <> show c
 class Neighbors (n :: Nat) f a g where
   neighs :: a -> g -> f a
 
-instance (Num a, Monad f, Alternative f, Mkable f, Memberable (a, a) g) => Neighbors 4 f (a, a) g where
+class Vicinity (n :: Nat) f a where
+  vicinity' :: (Integral i) => a -> i -> f a
+  vicinity :: a -> f a
+  default vicinity :: a -> f a
+  vicinity a = vicinity' @n @f @a a 1
+
+instance (Num a, Integral a, Monad f, Alternative f, Mkable f (a, a), Memberable (a, a) g) => Neighbors 4 f (a, a) g where
   neighs c g = [n | n <- mk (neighborsNoDiags c), n ∈ g]
 
-instance (Num a, Monad f, Alternative f, Mkable f, Memberable (a, a) g) => Neighbors 8 f (a, a) g where
+instance (Num a, Integral a, Monad f, Alternative f, Mkable f (a, a)) => Vicinity 4 f (a, a) where
+  vicinity' c i =
+    let bounds = [-i .. i]
+        (ns :: [(a, a)]) = [c + (fromIntegral xo, fromIntegral yo) | xo <- bounds, yo <- bounds, (xo, yo) /= (0, 0), xo == 0 || yo == 0]
+     in mk ns
+
+instance (Num a, Integral a, Monad f, Alternative f, Mkable f (a, a), Memberable (a, a) g) => Neighbors 8 f (a, a) g where
   neighs c g = [n | n <- mk (neighbors c), n ∈ g]
+
+instance (Num a, Integral a, Monad f, Alternative f, Mkable f (a, a)) => Vicinity 8 f (a, a) where
+  vicinity' c i =
+    let bounds = [-i .. i]
+        (ns :: [(a, a)]) = [c + (fromIntegral xo, fromIntegral yo) | xo <- bounds, yo <- bounds, (xo, yo) /= (0, 0)]
+     in mk ns
 
 neighbors :: (Num a) => (a, a) -> [(a, a)]
 neighbors (x, y) =

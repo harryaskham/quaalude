@@ -45,21 +45,24 @@ class MkWithable f where
 instance MkWithable Map where
   mkWith f xs = M.fromListWith f (un xs)
 
-class Mkable f where
+class Mkable f a where
   mk :: [a] -> f a
 
-instance Mkable [] where
+instance Mkable [] a where
   mk = id
 
-instance Mkable V.Vector where
+instance Mkable V.Vector a where
   mk = mkVec
 
-instance Mkable Seq where
+instance Mkable Seq a where
   mk = mkSeq
+
+instance (Ord a) => Mkable Set a where
+  mk = mkSet
 
 pattern Seq₁ a = a SQ.:<| SQ.Empty
 
-mk₁ :: (Mkable f) => a -> f a
+mk₁ :: (Mkable f a) => a -> f a
 mk₁ = mk . pure
 
 class MkableKey f where
@@ -131,13 +134,13 @@ instance {-# INCOHERENT #-} (UnableKey f) => Convable (f k v) [(k, v)] where
 instance {-# OVERLAPPING #-} (Ord a) => Convable [a] (Set a) where
   co = mkSet
 
-instance {-# INCOHERENT #-} (Convable a [b], Mkable f) => Convable a (f b) where
+instance {-# INCOHERENT #-} (Convable a [b], Mkable f b) => Convable a (f b) where
   co = mk . co
 
 instance {-# OVERLAPPING #-} Convable (Map k v) [(k, v)] where
   co = unMap
 
-instance {-# INCOHERENT #-} (Mkable f) => Convable [a] (f a) where
+instance {-# INCOHERENT #-} (Mkable f a) => Convable [a] (f a) where
   co = mk
 
 instance {-# INCOHERENT #-} (MkableKey f, Ord k) => Convable [(k, v)] (f k v) where
@@ -156,7 +159,7 @@ infixl 1 ⊏⊐
 
 infixl 1 ⊏
 
-(⊐) :: (Mkable f) => [a] -> f a
+(⊐) :: (Mkable f a) => [a] -> f a
 (⊐) = mk
 
 infixl 1 ⊐
@@ -608,3 +611,18 @@ splitAt n f = (take n f, drop n f)
 
 halve :: forall n f a. (Sizable (f a), Integral n, Takeable n f a, Droppable n f a) => f a -> (f a, f a)
 halve f = splitAt @n @f @a (size f `div` 2) f
+
+class Arbitrary f a where
+  arbitrary :: f a -> a
+  default arbitrary :: f a -> a
+  arbitrary = fst . arbitrarySnoc
+
+  arbitrarySnoc :: f a -> (a, f a)
+  default arbitrarySnoc :: (Unable f, Mkable f a) => f a -> (a, f a)
+  arbitrarySnoc = second mk . arbitrarySnoc @[] . un
+
+instance Arbitrary [] a where
+  arbitrarySnoc [] = error "arbitrary: no elements"
+  arbitrarySnoc (a : as) = (a, as)
+
+instance (Ord a) => Arbitrary Set a
