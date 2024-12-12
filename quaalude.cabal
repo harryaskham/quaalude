@@ -12,6 +12,7 @@ common common-settings
                         parsec,
                         megaparsec,
                         replace-megaparsec,
+                        groupBy,
                         vector,
                         array,
                         extra,

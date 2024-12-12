@@ -11,6 +11,7 @@ import Data.Default as X
 import Data.Distributive as X
 import Data.Either as X
 import Data.HList as X (HList (..), (.*.))
+import Data.List.GroupBy as X
 import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, foldl', foldr, fromList, keys, lookup, map, mapMaybe, null, size, split, splitAt, take, toList, (\\))
 import Data.PQueue.Prio.Min (deleteFindMin)
 import Data.Ratio as X
@@ -35,7 +36,7 @@ import Quaalude.Tuple as X
 import Quaalude.Unary as X
 import Quaalude.Util as X hiding (count)
 import Quaalude.Variadic as X
-import Relude as X hiding (drop, filter, many, optional, splitAt, swap, take, (<|>))
+import Relude as X hiding (drop, filter, group, many, optional, splitAt, swap, take, (<|>))
 import System.IO.Unsafe as X
 import Text.ParserCombinators.Parsec as X hiding (State)
 import Text.RawString.QQ as X
