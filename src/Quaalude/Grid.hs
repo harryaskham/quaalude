@@ -178,9 +178,7 @@ newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord, Show)
 
 type Grid = Grid' Coord2
 
-type ℤ² = Grid' (ℤ, ℤ)
-
-type ℕ₁₀² = Grid' (ℕ₁₀, ℕ₁₀)
+type G = Grid'
 
 instance (GridCell a, Coord k, Ord k) => Griddable Identity Grid' k a where
   mkGridM = pure . Grid . M.fromList

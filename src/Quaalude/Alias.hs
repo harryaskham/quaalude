@@ -110,3 +110,7 @@ infixr 9 <>∘
 (<>!) = mconcat
 
 infixl 0 <>!
+
+type ℤ² = (ℤ, ℤ)
+
+type ℕ₁₀² = (ℕ₁₀, ℕ₁₀)
