@@ -15,9 +15,16 @@ import Control.Lens as X
     traversed,
     (%%~),
     (%~),
+    (**~),
+    (*~),
+    (+~),
+    (-~),
     (.~),
+    (//~),
     (^.),
     (^..),
+    (^^~),
+    (^~),
   )
 import Control.Monad.Memo as X hiding (isNothing)
 import Control.Monad.ST as X

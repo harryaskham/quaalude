@@ -716,14 +716,26 @@ txt = r {quoteExp = (quoteExp r) . T.unpack . T.unlines . fmap T.strip . T.lines
 class As to from where
   as :: from -> to
 
+instance (As a c, As b d) => As (a, b) (c, d) where
+  as (a, b) = (as a, as b)
+
+instance (As b ℝ) => As (Σ b) ℝ where
+  as = Σ . as
+
+instance As ℤ ℝ where
+  as = round
+
+instance As ℝ ℤ where
+  as = fromIntegral
+
 instance As ℤ 𝔹 where
   as from = bool 0 1 from
 
 instance As ℤ ℤ₆₄ where
   as = fromIntegral
 
-instance (Applicative f, As a b) => As (f a) b where
-  as = pure . as @a @b
+instance (Applicative f, As a Bool) => As (f a) Bool where
+  as = pure . as @a @Bool
 
 -- Memo
 
