@@ -5,6 +5,20 @@ module Quaalude
   )
 where
 
+import Control.Lens as X
+  ( at,
+    indices,
+    itraversed,
+    ix,
+    mapped,
+    plate,
+    traversed,
+    (%%~),
+    (%~),
+    (.~),
+    (^.),
+    (^..),
+  )
 import Control.Monad.Memo as X hiding (isNothing)
 import Control.Monad.ST as X
 import Data.Default as X

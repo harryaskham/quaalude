@@ -105,6 +105,10 @@ instance (Num a) => Num (a, a) where
   signum (a, b) = (signum a, signum b)
   fromInteger n = (fromInteger n, fromInteger n)
 
+instance (Enum (a, a), Real (a, a), Integral a) => Integral (a, a) where
+  toInteger _ = error "toInteger on tuple"
+  quotRem (a, b) (c, d) = (quotRem a c, quotRem b d)
+
 class TupDrop (n :: Nat) a b where
   tupdrop :: a -> b
 

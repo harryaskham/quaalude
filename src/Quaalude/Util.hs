@@ -196,7 +196,13 @@ wordsOf :: Parser a -> Parser [a]
 wordsOf p = many (wordOf p)
 
 numbers :: (Read a) => Parser [a]
-numbers = number `sepBy` (many1 (try (noneOf "-0123456789.")))
+numbers = optionMaybe nonnumber *> (number `sepBy` nonnumber) <* optionMaybe nonnumber
+
+nondigit :: Parser Char
+nondigit = noneOf "-0123456789."
+
+nonnumber :: Parser String
+nonnumber = many1 nondigit
 
 nat₁₀ :: Parser ℕ₁₀
 nat₁₀ = do

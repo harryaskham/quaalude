@@ -22,6 +22,8 @@ type ℚ = Rational
 
 type ℝ = Double
 
+type ℝ² = (ℝ, ℝ)
+
 type ℂ = Complex ℝ
 
 type 𝔹 = Bool

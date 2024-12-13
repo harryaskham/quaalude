@@ -494,8 +494,6 @@ emptySeq = SQ.empty
 (><) :: Seq a -> Seq a -> Seq a
 (><) = (SQ.><)
 
-pattern EE = SQ.Empty
-
 (>/<) :: (Eq a) => Seq a -> a -> Seq a
 s >/< a = foldl' (flip SQ.deleteAt) s (SQ.elemIndicesL a s)
 
@@ -505,8 +503,24 @@ mkMinQ = PQ.fromList
 mkQ :: (Ord k) => [(k, a)] -> PQ.MinPQueue k a
 mkQ = PQ.fromList
 
+mkQ₁ :: (Ord k) => (a -> k) -> a -> PQ.MinPQueue k a
+mkQ₁ loss a = mkQ [(loss a, a)]
+
+qInsert :: (Ord k) => (a -> k) -> a -> PQ.MinPQueue k a -> PQ.MinPQueue k a
+qInsert loss a q = q |. (loss a, a)
+
 nullQ :: PQ.MinPQueue k a -> Bool
 nullQ = PQ.null
+
+type Q = PQ.MinPQueue
+
+pattern NullQ <- (nullQ -> True) :: (Ord k) => PQ.MinPQueue k a
+  where
+    NullQ = mkQ []
+
+pattern ka :<! q <- (PQ.deleteFindMin -> (ka, q))
+  where
+    ka :<! q = q |. ka
 
 (<!) :: (Ord k) => PQ.MinPQueue k a -> ((k, a), PQ.MinPQueue k a)
 (<!) = PQ.deleteFindMin
