@@ -12,11 +12,31 @@ type ℤ₆₄ = Int
 
 type ℤ = Integer
 
+type ℤ² = (ℤ, ℤ)
+
+type ℤ³ = (ℤ, ℤ, ℤ)
+
+type ℤ⁴ = (ℤ, ℤ, ℤ, ℤ)
+
+type ℤ⁵ = (ℤ, ℤ, ℤ, ℤ, ℤ)
+
+type ℤ⁶ = (ℤ, ℤ, ℤ, ℤ, ℤ, ℤ)
+
+type ℤ⁷ = (ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ)
+
+type ℤ⁸ = (ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ)
+
+type ℤ⁹ = (ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ)
+
+type ℤ¹⁰ = (ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ)
+
 type ℕ = Natural
 
 type Nat10 = 'S Nat9
 
 type ℕ₁₀ = Fin Nat10
+
+type ℕ₁₀² = (ℕ₁₀, ℕ₁₀)
 
 type ℚ = Rational
 
@@ -112,7 +132,3 @@ infixr 9 <>∘
 (<>!) = mconcat
 
 infixl 0 <>!
-
-type ℤ² = (ℤ, ℤ)
-
-type ℕ₁₀² = (ℕ₁₀, ℕ₁₀)

@@ -28,6 +28,7 @@ import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
 import Quaalude.Alias
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
+import Quaalude.Tuple
 import Quaalude.Unary
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
@@ -196,7 +197,7 @@ wordsOf :: Parser a -> Parser [a]
 wordsOf p = many (wordOf p)
 
 numbers :: (Read a) => Parser [a]
-numbers = optionMaybe nonnumber *> (number `sepBy` nonnumber) <* optionMaybe nonnumber
+numbers = many (try (optionMaybe nonnumber) *> try number <* try (optionMaybe nonnumber))
 
 nondigit :: Parser Char
 nondigit = noneOf "-0123456789."
