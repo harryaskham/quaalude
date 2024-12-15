@@ -6,8 +6,17 @@ import Data.Foldable qualified as F
 import Quaalude.Collection
 import Quaalude.Tuple
 import Text.Megaparsec (count')
+import Text.Show qualified as TS
 
-data Dir2 = DirUp | DirDown | DirLeft | DirRight deriving (Show, Eq, Ord, Enum, Bounded)
+data Dir2 = DirUp | DirDown | DirLeft | DirRight deriving (Eq, Ord, Enum, Bounded)
+
+type Dir² = Dir2
+
+instance TS.Show Dir2 where
+  show DirUp = "↑"
+  show DirDown = "↓"
+  show DirLeft = "←"
+  show DirRight = "→"
 
 instance Default Dir2 where
   def = DirUp
@@ -59,23 +68,58 @@ type Coord3 = (Int, Int, Int)
 
 type Coord4 = (Int, Int, Int, Int)
 
-class Coord a where
-  fromXY :: (Num i, Integral i) => (i, i) -> a
-  toXY :: (Num i, Integral i) => a -> (i, i)
-  mapXY :: (Num i, Integral i) => ((i, i) -> (i, i)) -> a -> a
+type family Idem2 a where
+  Idem2 (a, a) = (a, a)
+  Idem2 Integer = (Integer, Integer)
+  Idem2 Int = (Int, Int)
+  Idem2 Rational = (Rational, Rational)
 
-instance (Num i, Integral i) => Coord (i, i) where
+class Coord' i a k where
+  fromXY :: (i, i) -> k
+  toXY :: k -> (i, i)
+  mapXY :: ((i, i) -> (i, i)) -> k -> k
+  default mapXY :: (k ~ (a, a)) => ((i, i) -> (i, i)) -> k -> k
+  mapXY f (a, b) = fromXY @i @a (f (toXY @i @a (a, b)))
+
+instance (Coord' i a (a, a)) => Coord' i (a, a) (a, a) where
+  fromXY = fromXY @i @a @(a, a)
+  toXY = toXY @i @a @(a, a)
+  mapXY = mapXY @i @a @(a, a)
+
+instance (Num a, Integral a, Coord' a a (a, a)) => Coord' Int a (a, a) where
+  fromXY (x, y) = (fromInteger $ fromIntegral x, fromInteger $ fromIntegral y)
+  toXY (a, b) = (round $ fromIntegral a, round $ fromIntegral b)
+
+instance Coord' Integer Integer (Integer, Integer) where
   fromXY (x, y) = (fromIntegral x, fromIntegral y)
   toXY (a, b) = (fromIntegral a, fromIntegral b)
-  mapXY f (a, b) =
-    let (x, y) = f (fromIntegral a, fromIntegral b)
-     in (fromIntegral x, fromIntegral y)
+
+-- instance Coord' Int Int (Int, Int) where
+--   fromXY (x, y) = (fromIntegral x, fromIntegral y)
+--   toXY (a, b) = (fromIntegral a, fromIntegral b)
+
+instance Coord' Rational Rational (Rational, Rational) where
+  fromXY (x, y) = (fromRational x, fromRational y)
+  toXY (a, b) = (toRational a, toRational b)
+
+class
+  ( Coord' Int a a
+  ) =>
+  Coord a
+
+instance
+  ( Coord' Int a a
+  ) =>
+  Coord a
 
 manhattan0 :: Coord2 -> Int
 manhattan0 = (+) <$> (abs . fst) <*> (abs . snd)
 
-manhattan :: Coord2 -> Coord2 -> Int
-manhattan (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
+manhattan :: forall a. (Coord (a, a), Num a) => (a, a) -> (a, a) -> a
+manhattan a b =
+  let (x1, y1) = toXY @Int @(a, a) a
+      (x2, y2) = toXY @Int @(a, a) b
+   in fst $ fromXY @Int @(a, a) @(a, a) (abs (x1 - x2) + abs (y1 - y2), 0 :: Int)
 
 manhattan3 :: Coord3 -> Coord3 -> Int
 manhattan3 (x1, y1, z1) (x2, y2, z2) = abs (x1 - x2) + abs (y1 - y2) + abs (z1 - z2)
@@ -83,11 +127,11 @@ manhattan3 (x1, y1, z1) (x2, y2, z2) = abs (x1 - x2) + abs (y1 - y2) + abs (z1 -
 manhattan4 :: Coord4 -> Coord4 -> Int
 manhattan4 (x1, y1, z1, w1) (x2, y2, z2, w2) = abs (x1 - x2) + abs (y1 - y2) + abs (z1 - z2) + abs (w1 - w2)
 
-move :: Dir2 -> Int -> Coord2 -> Coord2
-move DirUp n (x, y) = (x, y - n)
-move DirDown n (x, y) = (x, y + n)
-move DirLeft n (x, y) = (x - n, y)
-move DirRight n (x, y) = (x + n, y)
+move :: forall i c. (Num c, Num i, Coord' i c (c, c)) => Dir2 -> i -> (c, c) -> (c, c)
+move DirUp n = mapXY @i @(c, c) (second (subtract n))
+move DirDown n = mapXY @i @(c, c) (second (+ n))
+move DirLeft n = mapXY @i @(c, c) (first (subtract n))
+move DirRight n = mapXY @i @(c, c) (first (+ n))
 
 move3 :: Dir3 -> Int -> Coord3 -> Coord3
 move3 D3xP n (x, y, z) = (x + n, y, z)

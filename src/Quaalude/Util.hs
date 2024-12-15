@@ -557,6 +557,18 @@ lineOf p = p <* eol
 linesOf :: Parser a -> Parser [a]
 linesOf p = many (lineOf p)
 
+manyOf :: String -> Parser String
+manyOf = many . oneOf
+
+manyOf1 :: String -> Parser String
+manyOf1 = many1 . oneOf
+
+manyNoneOf :: String -> Parser String
+manyNoneOf = many . noneOf
+
+manyNoneOf1 :: String -> Parser String
+manyNoneOf1 = many1 . noneOf
+
 -- Map helpers
 
 countMap :: (Ord a, Integral n) => [a] -> M.Map a n
@@ -727,6 +739,9 @@ instance As ℤ ℝ where
   as = round
 
 instance As ℝ ℤ where
+  as = fromIntegral
+
+instance As ℝ ℤ₆₄ where
   as = fromIntegral
 
 instance As ℤ 𝔹 where

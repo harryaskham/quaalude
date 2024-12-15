@@ -1,6 +1,9 @@
 module Quaalude.Math where
 
+import Data.Basis
 import Data.List qualified as L
+import Data.Ratio
+import GHC.TypeNats
 import Quaalude.Alias
 import Quaalude.Collection
 import Relude.Unsafe qualified as U

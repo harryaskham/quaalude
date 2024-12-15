@@ -35,6 +35,14 @@ instance Packable String T.Text where
   pack = T.pack
   unpack = T.unpack
 
+instance Packable String String where
+  pack = id
+  unpack = id
+
+instance Packable Text Text where
+  pack = id
+  unpack = id
+
 instance Packable String BL.ByteString where
   pack = CL8.pack
   unpack = CL8.unpack
@@ -321,6 +329,9 @@ instance (A.Ix i) => MaybeGettable A.Array i e where
 
 class ValueGettable f k v where
   (|?>) :: f -> v -> [k]
+  (|!>) :: f -> v -> k
+  default (|!>) :: f -> v -> k
+  xs |!> v = U.head (xs |?> v)
 
 instance (Eq a) => ValueGettable [a] Int a where
   l |?> a = L.elemIndices a l

@@ -40,6 +40,8 @@ type ℕ₁₀² = (ℕ₁₀, ℕ₁₀)
 
 type ℚ = Rational
 
+type ℚ² = (ℚ, ℚ)
+
 type ℝ = Double
 
 type ℝ² = (ℝ, ℝ)

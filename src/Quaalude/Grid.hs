@@ -31,6 +31,7 @@ import Quaalude.Unary
 import Quaalude.Util (both, bothM, unjust, (.<.), (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
+import Text.Show qualified as TS
 import Prelude hiding (filter)
 
 emptyGrid :: (Griddable Identity g k a) => g k a
@@ -133,9 +134,9 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   minXYM :: g k a -> m k
   gridDimsM :: g k a -> m k
   gridDimsM g = do
-    (x0, y0) <- toXY <$> minXYM g
-    (x1, y1) <- toXY <$> maxXYM g
-    return $ fromXY (x1 - x0 + 1, y1 - y0 + 1)
+    (x0, y0) <- toXY @Int @k @k <$> minXYM g
+    (x1, y1) <- toXY @Int @k @k <$> maxXYM g
+    return $ fromXY @Int @k @k (x1 - x0 + 1, y1 - y0 + 1)
   gridFindM :: a -> g k a -> m [k]
   gridFindM a g = (\cs -> [k | (k, v) <- cs, v == a]) <$> unGridM g
   gridFindOneM :: a -> g k a -> m (Maybe k)
@@ -174,11 +175,18 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   (<||∉>) :: k -> g k a -> m Bool
   a <||∉> g = not <$> (a <||∈> g)
 
-newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord, Show)
+newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord)
+
+deriving via PrettyGrid (Grid' k a) instance (Griddable Identity Grid' k a) => Show (Grid' k a)
 
 type Grid = Grid' Coord2
 
 type G = Grid'
+
+newtype PrettyGrid g = PrettyGrid g
+
+instance (Griddable Identity g k a) => TS.Show (PrettyGrid (g k a)) where
+  show (PrettyGrid g) = T.unpack $ pretty g
 
 instance (GridCell a, Coord k, Ord k) => Griddable Identity Grid' k a where
   mkGridM = pure . Grid . M.fromList
@@ -189,15 +197,15 @@ instance (GridCell a, Coord k, Ord k) => Griddable Identity Grid' k a where
   gridModifyM f c (Grid g) = pure . Grid $ M.adjust f c g
   maxXYM (Grid g) =
     pure $
-      fromXY
-        ( maximum $ fst . toXY <$> M.keys g,
-          maximum $ snd . toXY <$> M.keys g
+      fromXY @Int @k
+        ( maximum $ fst . toXY @Int @k <$> M.keys g,
+          maximum $ snd . toXY @Int @k <$> M.keys g
         )
   minXYM (Grid g) =
     pure $
-      fromXY
-        ( minimum $ fst . toXY <$> M.keys g,
-          minimum $ snd . toXY <$> M.keys g
+      fromXY @Int @k
+        ( minimum $ fst . toXY @Int @k <$> M.keys g,
+          minimum $ snd . toXY @Int @k <$> M.keys g
         )
   mapCoordsM f (Grid g) = pure . Grid $ M.mapKeys f g
   filterCoordsM f (Grid g) = pure . Grid $ M.filterWithKey (\k _ -> f k) g
@@ -205,6 +213,8 @@ instance (GridCell a, Coord k, Ord k) => Griddable Identity Grid' k a where
   gridMemberM c (Grid g) = pure $ M.member c g
 
 newtype IntMapGrid' k a = IntMapGrid (IntMap (IntMap a)) deriving (Eq, Ord, Show)
+
+deriving via PrettyGrid (IntMapGrid' Coord2 a) instance (Griddable Identity IntMapGrid' Coord2 a) => Show (IntMapGrid' Coord2 a)
 
 type IntMapGrid = IntMapGrid' Coord2
 
@@ -233,7 +243,9 @@ instance (GridCell a) => Griddable Identity IntMapGrid' Coord2 a where
     bothM mkGridM (l', r')
   gridMemberM (x, y) g = isJust <$> gridGetMaybeM (x, y) g
 
-newtype HashGrid' k a = HashGrid (HashMap k a) deriving (Eq, Ord, Show)
+newtype HashGrid' k a = HashGrid (HashMap k a) deriving (Eq, Ord)
+
+deriving via PrettyGrid (HashGrid' k a) instance (Griddable Identity HashGrid' k a) => Show (HashGrid' k a)
 
 type HashGrid = HashGrid' Coord2
 
@@ -251,7 +263,9 @@ instance (GridCell a) => Griddable Identity HashGrid' Coord2 a where
   partitionCoordsM f (HashGrid g) = pure . both (HashGrid . mkHashMap . unMap) $ M.partitionWithKey (\k _ -> f k) $ mkMap . unHashMap $ g
   gridMemberM c (HashGrid g) = pure $ HM.member c g
 
-newtype VectorGrid' k a = VectorGrid (V.Vector (V.Vector a)) deriving (Eq, Ord, Show)
+newtype VectorGrid' k a = VectorGrid (V.Vector (V.Vector a)) deriving (Eq, Ord)
+
+deriving via PrettyGrid (VectorGrid' Coord2 a) instance (Griddable Identity VectorGrid' Coord2 a) => Show (VectorGrid' Coord2 a)
 
 type VectorGrid = VectorGrid' Coord2
 
@@ -279,6 +293,8 @@ instance (GridCell a) => Griddable Identity VectorGrid' Coord2 a where
 
 newtype AGrid' k a = AGrid (A.Array k a) deriving (Eq)
 
+deriving via PrettyGrid (AGrid' k a) instance (Griddable Identity AGrid' k a) => Show (AGrid' k a)
+
 type AGrid a = AGrid' Coord2 a
 
 instance (Monad m, GridCell a) => Griddable m AGrid' Coord2 a where
@@ -294,6 +310,8 @@ instance (Monad m, GridCell a) => Griddable m AGrid' Coord2 a where
   minXYM (AGrid g) = return $ fst (A.bounds g)
 
 newtype ArrayGrid' k a = ArrayGrid (IOArray k a) deriving (Eq)
+
+deriving via PrettyGrid (ArrayGrid' k a) instance (Griddable Identity ArrayGrid' k a) => Show (ArrayGrid' k a)
 
 type ArrayGrid a = ArrayGrid' Coord2 a
 
@@ -455,13 +473,19 @@ instance (GridCell a) => Griddable IO IOVectorGrid' Coord2 a where
   maxXYM (IOVectorGrid g) = do
     maxX <- (STV.length <$> STV.read g 0) <&> subtract 1
     let maxY = STV.length g - 1
-    return $ fromXY (maxX, maxY)
+    return $ fromXY @Int @Int (maxX, maxY)
   minXYM _ = return (0, 0)
 
 -- To create a Cell, just supply a Bimap between char and cell
 -- Or, one can override toChar and fromChar where there is some special logic
 class (Eq a) => GridCell a where
   charMap :: Bimap a Char
+  default charMap :: (Ord a) => Bimap a Char
+  charMap = mkBimap cell
+
+  cell :: [(a, Char)]
+  default cell :: [(a, Char)]
+  cell = unBimap charMap
 
   fromChar :: Char -> a
   default fromChar :: (Ord a) => Char -> a
@@ -511,16 +535,16 @@ instance GridCell IntCell where
 instance (Ord a, Integral a) => GridCell (Σ a) where
   charMap = BM.fromList [(Σ i, intToDigit $ fromIntegral i) | i <- [0 .. 9]]
 
-readGridM :: (Griddable m g k a) => Text -> m (g k a)
-readGridM = toGridM . lines
+readGridM :: (Griddable m g k a, Packable t Text) => t -> m (g k a)
+readGridM = toGridM . lines . pack
 
-readGrid :: (Griddable Identity g k a) => Text -> g k a
-readGrid = toGrid . lines
+readGrid :: (Griddable Identity g k a, Packable t Text) => t -> g k a
+readGrid = toGrid . lines . pack
 
-toGridM :: (Griddable m g k a) => [Text] -> m (g k a)
+toGridM :: forall m g k a. (Griddable m g k a) => [Text] -> m (g k a)
 toGridM rows =
   mkGridM
-    [ (fromXY (x, y), fromChar c)
+    [ (fromXY @Int @k @k (x, y), fromChar c)
       | (y, row) <- zip [0 ..] rows,
         (x, c) <- zip [0 ..] (T.unpack row)
     ]
@@ -588,25 +612,25 @@ foldCoordsM = foldCoordsM' (def @d)
 foldCoords :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => (acc -> k -> acc) -> acc -> g k a -> acc
 foldCoords f init = runIdentity . foldCoordsM @d ((return .) . f) init
 
-cropXM :: (Griddable m g k a) => Int -> Int -> g k a -> m (g k a)
+cropXM :: forall m g k a. (Griddable m g k a) => Int -> Int -> g k a -> m (g k a)
 cropXM i j g = do
-  g' <- filterCoordsM (\c -> let (x, _) = toXY c in x >= i && x < j) g
-  xO <- fst . toXY <$> minXYM g'
-  mapCoordsM (mapXY $ first (subtract xO)) g'
+  g' <- filterCoordsM (\c -> let (x, _) = toXY @Int @k @k c in x >= i && x < j) g
+  xO <- fst . toXY @Int @k @k <$> minXYM g'
+  mapCoordsM (mapXY @Int @k @k $ first (subtract xO)) g'
 
 cropX :: (Griddable Identity g k a) => Int -> Int -> g k a -> g k a
 cropX i j g = runIdentity $ cropXM i j g
 
-modifyCoordsM :: (Griddable m g k a) => (k -> k) -> g k a -> m (g k a)
+modifyCoordsM :: forall m g k a. (Griddable m g k a, Coord k) => (k -> k) -> g k a -> m (g k a)
 modifyCoordsM f g = do
-  (maxX, maxY) <- toXY <$> maxXYM g
+  (maxX, maxY) <- toXY @Int @k @k <$> maxXYM g
   let xO = (maxX + 1) `div` 2
   let yO = (maxY + 1) `div` 2
-  let toOrigin c = let (x, y) = toXY c in fromXY (x - xO, y - yO)
+  let toOrigin = mapXY @Int @k @k (bimap (subtract xO) (subtract yO))
   let fromOrigin g =
         do
-          (minX, minY) <- toXY <$> minXYM g
-          mapCoordsM (\c -> let (x, y) = toXY c in fromXY (x - minX, y - minY)) g
+          (minX, minY) <- toXY @Int @k @k <$> minXYM g
+          mapCoordsM (mapXY @Int @k @k (bimap (subtract minX) (subtract minY))) g
   g' <- mapCoordsM (f . toOrigin) g
   fromOrigin g'
 
@@ -622,9 +646,9 @@ variantsNub = runIdentity . variantsNubM
 rotations :: (Griddable Identity g k a, Eq (g k a)) => g k a -> [g k a]
 rotations = variants >>> pure >>> ([vId, r90, r180, r270] <*>)
 
-variantsM' :: (Griddable m g k a) => g k a -> m [g k a]
+variantsM' :: forall m g k a. (Griddable m g k a, Coord k) => g k a -> m [g k a]
 variantsM' grid = do
-  (maxX, _) <- toXY <$> maxXYM grid
+  (maxX, _) <- toXY @Int @k @k <$> maxXYM grid
   let isEven = even (maxX + 1)
       flipV (x, y) = (if isEven then negate x - 1 else negate x, y)
       flipH (x, y) = (x, if isEven then negate y - 1 else negate y)
@@ -632,7 +656,7 @@ variantsM' grid = do
       rot180 = rot270 . rot270
       rot90 = rot270 . rot270 . rot270
       mods = (.) <$> [id, flipH, flipV] <*> [id, rot90, rot180, rot270]
-  sequence $ modifyCoordsM <$> (mapXY <$> mods) <*> pure grid
+  sequence $ modifyCoordsM <$> (mapXY @Int @k @k <$> mods) <*> pure grid
 
 variants' :: (Griddable Identity g k a) => g k a -> [g k a]
 variants' = runIdentity . variantsM'
@@ -652,28 +676,28 @@ data Variants g k a = Variants
     v270 :: g k a
   }
 
-variantsM :: (Griddable m g k a) => g k a -> m (Variants g k a)
+variantsM :: (Griddable m g k a, Coord k) => g k a -> m (Variants g k a)
 variantsM grid = do
   vs <- variantsM' grid
   let [a, b, c, d, e, f, g, h, i, j, k, l] = vs
   return $ Variants a b c d e f g h i j k l
 
-variants :: (Griddable Identity g k a) => g k a -> Variants g k a
+variants :: (Griddable Identity g k a, Coord k) => g k a -> Variants g k a
 variants = runIdentity . variantsM
 
-gridLinesM :: (Griddable m g k a) => g k a -> m [[a]]
+gridLinesM :: forall k m g a. (Griddable m g k a, Coord k) => g k a -> m [[a]]
 gridLinesM g = do
-  (minX, minY) <- toXY <$> minXYM g
-  (maxX, maxY) <- toXY <$> maxXYM g
-  sequence [sequence [g <||!> fromXY (x, y) | x <- [minX .. maxX]] | y <- [minY .. maxY]]
+  (minX, minY) <- toXY @Int @k @k <$> minXYM g
+  (maxX, maxY) <- toXY @Int @k @k <$> maxXYM g
+  sequence [sequence [g <||!> fromXY @Int @k @k (x, y) | x <- [minX :: Int .. maxX]] | y <- [minY :: Int .. maxY]]
 
-gridLines :: (Griddable Identity g k a) => g k a -> [[a]]
+gridLines :: (Griddable Identity g k a, Coord k) => g k a -> [[a]]
 gridLines = runIdentity . gridLinesM
 
-prettyM :: (Griddable m g k a) => g k a -> m Text
+prettyM :: (Griddable m g k a, Coord k) => g k a -> m Text
 prettyM grid = T.pack . intercalate "\n" <$> (fmap toChar <$$> gridLinesM grid)
 
-pretty :: (Griddable Identity g k a) => g k a -> Text
+pretty :: (Griddable Identity g k a, Coord k) => g k a -> Text
 pretty = runIdentity . prettyM
 
 convolve ::

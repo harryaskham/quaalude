@@ -3,6 +3,8 @@
 
 module Quaalude.Tracers where
 
+import Control.Concurrent
+import System.Console.ANSI
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Parsec
 import Text.ParserCombinators.Parsec
@@ -46,3 +48,11 @@ traceTextF f a = traceTextLn (f a) a
 ptrace :: Bool -> String -> Parser a -> Parser a
 ptrace True = parserTraced
 ptrace False = const id
+
+traceAnim :: (Show a) => Double -> a -> b -> b
+traceAnim fps a b = unsafePerformIO do
+  let uspf = 1000000.0 / fps
+  clearScreen
+  print a
+  threadDelay (round uspf)
+  return b

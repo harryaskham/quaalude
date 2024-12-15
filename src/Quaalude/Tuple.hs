@@ -323,11 +323,14 @@ instance {-# OVERLAPS #-} (ToTups a b, ToTup b c) => ToTup a c where
 instance {-# OVERLAPS #-} (ToTup a b) => ToTup [a] [b] where
   toTup = fmap toTup
 
+-- instance {-# OVERLAPS #-} (ToTup a [b], Mkable f b) => ToTup a (f b) where
+-- toTup = mk @f @b . toTup @a @[b]
+
 instance {-# OVERLAPS #-} ToTup (HomTup 0 a) () where
   toTup _ = ()
 
 instance
-  {-# OVERLAPPING #-}
+  {-# OVERLAPS #-}
   ( ToTup (HomTup (n - 1) a) (ToTupF (HomTup (n - 1) a)),
     TupCons a (ToTupF (HomTup (n - 1) a)) t,
     t ~ ToTupF (HomTup n a)
@@ -359,11 +362,11 @@ instance (List2Tup l t) => ToTups (HList l) t where
 class MkHomTup n a b where
   mkHomTup :: a -> b
 
-instance {-# OVERLAPPING #-} MkHomTup 0 [a] (HomTup 0 a) where
+instance {-# OVERLAPS #-} MkHomTup 0 [a] (HomTup 0 a) where
   mkHomTup = const $ HomTup @0 @a []
 
 instance
-  {-# OVERLAPPABLE #-}
+  {-# OVERLAPS #-}
   ( MkHomTup (n - 1) [a] (HomTup (n - 1) a),
     HomTupCons a (HomTup (n - 1) a) (HomTup n a)
   ) =>

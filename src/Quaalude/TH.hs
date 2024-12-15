@@ -8,6 +8,7 @@ import Data.Text qualified as T
 import GHC.TypeLits (Symbol)
 import Language.Haskell.TH
 import Network.HTTP.Req (defaultHttpConfig)
+import Quaalude.Collection (Packable (..))
 import Quaalude.Grid
 import Quaalude.Tracers
 import Quaalude.Util
@@ -38,8 +39,8 @@ runAllDays =
 class EmbedInput a where
   input :: a -> Q Exp
 
-grid :: (EmbedInput a) => (a -> Q Exp) -> a -> Q Exp
-grid grid day = AppE (VarE 'readGrid) <$> input day
+grid :: Int -> Q Exp
+grid day = [e|readGrid ($(input day) :: Text)|]
 
 aoc :: Int -> Q Exp
 aoc = input @Int
@@ -68,8 +69,8 @@ instance EmbedInput Example where
 inputS :: (EmbedInput a) => a -> Q Exp
 inputS day = AppE (VarE 'T.unpack) <$> input day
 
-gridsT :: (Griddable Identity g k a) => T.Text -> [g k a]
-gridsT s = readGrid <$> T.splitOn "\n\n" s
+gridsT :: (Griddable Identity g k a, Packable t Text) => t -> [g k a]
+gridsT s = readGrid <$> T.splitOn "\n\n" (pack s)
 
 grids :: (Int -> Q Exp) -> Int -> Q Exp
 grids inputFn day = AppE (VarE 'gridsT) <$> inputFn day
@@ -77,8 +78,8 @@ grids inputFn day = AppE (VarE 'gridsT) <$> inputFn day
 gridM :: (Int -> Q Exp) -> Int -> Q Exp
 gridM inputFn day = AppE (VarE 'readGridM) <$> inputFn day
 
-gridsTM :: (Griddable m g k a) => T.Text -> m [g k a]
-gridsTM s = traverse readGridM $ T.splitOn "\n\n" s
+gridsTM :: (Griddable m g k a, Packable t Text) => t -> m [g k a]
+gridsTM s = traverse readGridM $ T.splitOn "\n\n" (pack s)
 
 gridsM :: (Int -> Q Exp) -> Int -> Q Exp
 gridsM inputFn day = AppE (VarE 'gridsTM) <$> inputFn day
