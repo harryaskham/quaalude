@@ -3,6 +3,7 @@ module Quaalude.Coord where
 import Data.Array
 import Data.Default
 import Data.Foldable qualified as F
+import Quaalude.Alias
 import Quaalude.Collection
 import Quaalude.Tuple
 import Text.Megaparsec (count')
@@ -11,6 +12,68 @@ import Text.Show qualified as TS
 data Dir2 = DirUp | DirDown | DirLeft | DirRight deriving (Eq, Ord, Enum, Bounded)
 
 type Dir² = Dir2
+
+class RelativeDir c d where
+  goingTo :: c -> c -> [d]
+  default goingTo :: (Turnable d) => c -> c -> [d]
+  goingTo a b = turn180 <$> comingFrom a b
+  comingFrom :: c -> c -> [d]
+  default comingFrom :: (Turnable d) => c -> c -> [d]
+  comingFrom a b = turn180 <$> goingTo a b
+
+instance (Eq c, Num c, Coord' c c (c, c)) => RelativeDir (c, c) Dir2 where
+  goingTo a b =
+    case bimap signum signum (toXY @c @c @(c, c) b - toXY @c @c @(c, c) a) of
+      (0, 0) -> []
+      (0, -1) -> pure DirUp
+      (0, 1) -> pure DirDown
+      (-1, 0) -> pure DirLeft
+      (1, 0) -> pure DirRight
+      (1, 1) -> [DirRight, DirDown]
+      (-1, -1) -> [DirLeft, DirUp]
+      (1, -1) -> [DirRight, DirUp]
+      (-1, 1) -> [DirLeft, DirDown]
+
+class Turnable d where
+  turnCW :: d -> d
+
+  turnDiff :: (Integral i, Ord i) => d -> d -> i
+  default turnDiff :: (Integral i, Ord i) => d -> d -> i
+  turnDiff a b = min (turnDiffCW a b) (turnDiffCCW a b)
+
+  turnDiffCW :: (Integral i, Ord i) => d -> d -> i
+  default turnDiffCW :: (Integral i, Ord i, Eq d) => d -> d -> i
+  turnDiffCW a b =
+    let go n a b
+          | a ≡ b = n
+          | otherwise = go (n + 1) (turnCW a) b
+     in go 0 a b
+
+  turnDiffCCW :: (Integral i, Ord i) => d -> d -> i
+  default turnDiffCCW :: (Integral i, Ord i, Eq d) => d -> d -> i
+  turnDiffCCW a b =
+    let go n a b
+          | a ≡ b = n
+          | otherwise = go (n + 1) (turnCCW a) b
+     in go 0 a b
+
+  turnCCW :: d -> d
+  default turnCCW :: d -> d
+  turnCCW = turnCW . turnCW . turnCW
+
+  turn180 :: d -> d
+  default turn180 :: d -> d
+  turn180 = turnCW . turnCW
+
+  opposite :: d -> d
+  default opposite :: d -> d
+  opposite = turn180
+
+instance Turnable Dir2 where
+  turnCW DirUp = DirRight
+  turnCW DirRight = DirDown
+  turnCW DirDown = DirLeft
+  turnCW DirLeft = DirUp
 
 instance TS.Show Dir2 where
   show DirUp = "↑"
@@ -140,21 +203,6 @@ move3 D3yP n (x, y, z) = (x, y + n, z)
 move3 D3yN n (x, y, z) = (x, y - n, z)
 move3 D3zP n (x, y, z) = (x, y, z + n)
 move3 D3zN n (x, y, z) = (x, y, z - n)
-
-turnCW :: Dir2 -> Dir2
-turnCW DirUp = DirRight
-turnCW DirRight = DirDown
-turnCW DirDown = DirLeft
-turnCW DirLeft = DirUp
-
-turn180 :: Dir2 -> Dir2
-turn180 = turnCW . turnCW
-
-opposite :: Dir2 -> Dir2
-opposite = turn180
-
-turnCCW :: Dir2 -> Dir2
-turnCCW = turnCW . turnCW . turnCW
 
 rlToTurn :: Char -> (Dir2 -> Dir2)
 rlToTurn 'r' = turnCW

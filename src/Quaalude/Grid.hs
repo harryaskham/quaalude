@@ -481,11 +481,11 @@ instance (GridCell a) => Griddable IO IOVectorGrid' Coord2 a where
 class (Eq a) => GridCell a where
   charMap :: Bimap a Char
   default charMap :: (Ord a) => Bimap a Char
-  charMap = mkBimap cell
+  charMap = mkBimap cs
 
-  cell :: [(a, Char)]
-  default cell :: [(a, Char)]
-  cell = unBimap charMap
+  cs :: [(a, Char)]
+  default cs :: [(a, Char)]
+  cs = unBimap charMap
 
   fromChar :: Char -> a
   default fromChar :: (Ord a) => Char -> a
@@ -535,11 +535,11 @@ instance GridCell IntCell where
 instance (Ord a, Integral a) => GridCell (Σ a) where
   charMap = BM.fromList [(Σ i, intToDigit $ fromIntegral i) | i <- [0 .. 9]]
 
-readGridM :: (Griddable m g k a, Packable t Text) => t -> m (g k a)
-readGridM = toGridM . lines . pack
+readGridM :: (Griddable m g k a) => Text -> m (g k a)
+readGridM = toGridM . lines
 
-readGrid :: (Griddable Identity g k a, Packable t Text) => t -> g k a
-readGrid = toGrid . lines . pack
+readGrid :: (Griddable Identity g k a) => Text -> g k a
+readGrid = toGrid . lines
 
 toGridM :: forall m g k a. (Griddable m g k a) => [Text] -> m (g k a)
 toGridM rows =

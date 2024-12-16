@@ -525,9 +525,7 @@ nullQ = PQ.null
 
 type Q = PQ.MinPQueue
 
-pattern NullQ <- (nullQ -> True) :: (Ord k) => PQ.MinPQueue k a
-  where
-    NullQ = mkQ []
+pattern NullQ <- (nullQ -> True)
 
 pattern ka :<! q <- (PQ.deleteFindMin -> (ka, q))
   where

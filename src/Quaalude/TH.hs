@@ -42,6 +42,9 @@ class EmbedInput a where
 grid :: Int -> Q Exp
 grid day = [e|readGrid ($(input day) :: Text)|]
 
+gridx :: Int -> Q Exp
+gridx day = [e|readGrid ($(input (Example day)) :: Text)|]
+
 aoc :: Int -> Q Exp
 aoc = input @Int
 
