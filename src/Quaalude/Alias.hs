@@ -3,6 +3,7 @@ module Quaalude.Alias where
 import Data.Complex (Complex)
 import Data.Fin (Fin)
 import Data.Type.Nat (Nat (S), Nat9)
+import Relude.Unsafe qualified as U
 
 -- Numeric
 
@@ -49,6 +50,12 @@ type ℝ² = (ℝ, ℝ)
 type ℂ = Complex ℝ
 
 type 𝔹 = Bool
+
+infinity :: forall a. (Read a) => a
+infinity = U.read @a "Infinity"
+
+(∞) :: forall a. (Read a) => a
+(∞) = infinity @a
 
 -- Functional
 
