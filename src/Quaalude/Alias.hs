@@ -58,9 +58,6 @@ class Inf a where
   ꝏ :: a
   ꝏ = infinity
 
-instance (As a ℝ) => Inf a where
-  infinity = as @s $ U.read @ℝ "Infinity"
-
 pattern Ꝏ <- infinity
 
 -- Functional

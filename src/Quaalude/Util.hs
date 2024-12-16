@@ -729,6 +729,9 @@ txt = r {quoteExp = (quoteExp r) . T.unpack . T.unlines . fmap T.strip . T.lines
 class As to from where
   as :: from -> to
 
+instance (As a ℝ) => Inf a where
+  infinity = as @a $ U.read @ℝ "Infinity"
+
 instance (As a c, As b d) => As (a, b) (c, d) where
   as (a, b) = (as a, as b)
 
