@@ -531,6 +531,8 @@ pattern ka :<! q <- (PQ.deleteFindMin -> (ka, q))
   where
     ka :<! q = q |. ka
 
+pattern a :<!! q <- (first snd . PQ.deleteFindMin -> (a, q))
+
 (<!) :: (Ord k) => PQ.MinPQueue k a -> ((k, a), PQ.MinPQueue k a)
 (<!) = PQ.deleteFindMin
 

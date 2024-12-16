@@ -51,11 +51,17 @@ type ℂ = Complex ℝ
 
 type 𝔹 = Bool
 
-infinity :: forall a. (Read a) => a
-infinity = U.read @a "Infinity"
+class Inf a where
+  infinity :: a
+  (∞) :: a
+  (∞) = infinity
+  ꝏ :: a
+  ꝏ = infinity
 
-(∞) :: forall a. (Read a) => a
-(∞) = infinity @a
+instance (As a ℝ) => Inf a where
+  infinity = as @s $ U.read @ℝ "Infinity"
+
+pattern Ꝏ <- infinity
 
 -- Functional
 
