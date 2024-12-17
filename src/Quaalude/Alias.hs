@@ -2,7 +2,7 @@ module Quaalude.Alias where
 
 import Data.Complex (Complex)
 import Data.Fin (Fin)
-import Data.Type.Nat (Nat (S), Nat9)
+import Data.Type.Nat (Nat (S), Nat3, Nat9)
 import Relude.Unsafe qualified as U
 
 -- Numeric
@@ -34,6 +34,8 @@ type ℤ¹⁰ = (ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ, ℤ)
 type ℕ = Natural
 
 type Nat10 = 'S Nat9
+
+type ℕ₃ = Fin Nat3
 
 type ℕ₁₀ = Fin Nat10
 
