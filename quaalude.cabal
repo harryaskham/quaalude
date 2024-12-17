@@ -27,6 +27,7 @@ common common-settings
                         mod,
                         semirings,
                         distributive,
+                        OneTuple,
                         template-haskell,
                         file-embed,
                         utility-ht,

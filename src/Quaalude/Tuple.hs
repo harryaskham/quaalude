@@ -2,6 +2,7 @@ module Quaalude.Tuple where
 
 import Data.HList
 import Data.List qualified as L
+import Data.Tuple.Solo
 import GHC.TypeLits
 import Quaalude.Collection
 import Text.Parsec
@@ -9,6 +10,7 @@ import Prelude hiding (natVal)
 
 type family TupConsF a as where
   TupConsF a () = a
+  TupConsF a (Solo b) = (a, b)
   TupConsF a (b, c) = (a, b, c)
   TupConsF a (b, c, d) = (a, b, c, d)
   TupConsF a (b, c, d, e) = (a, b, c, d, e)
@@ -17,18 +19,17 @@ type family TupConsF a as where
   TupConsF a (b, c, d, e, f, g, h) = (a, b, c, d, e, f, g, h)
   TupConsF a (b, c, d, e, f, g, h, i) = (a, b, c, d, e, f, g, h, i)
   TupConsF a (b, c, d, e, f, g, h, i, j) = (a, b, c, d, e, f, g, h, i, j)
-  TupConsF a b = (a, b)
 
-type a × b = TupConsF a b
+type a × b = (a, b)
 
 class TupCons a b c where
   tupCons :: a -> b -> c
 
-instance TupCons a () a where
-  tupCons a () = a
+instance TupCons a () (Solo a) where
+  tupCons a () = Solo a
 
-instance TupCons a b (a, b) where
-  tupCons a b = (a, b)
+instance TupCons a (Solo b) (a, b) where
+  tupCons a (Solo b) = (a, b)
 
 instance TupCons a (b, c) (a, b, c) where
   tupCons a (b, c) = (a, b, c)
@@ -53,7 +54,8 @@ instance TupCons a (b, c, d, e, f, g, h, i) (a, b, c, d, e, f, g, h, i) where
 
 type family TupSnocF a where
   TupSnocF () = TypeError ('Text "TupSnocF: ()")
-  TupSnocF (a, b) = (a, b)
+  TupSnocF (Solo a) = (a, ())
+  TupSnocF (a, b) = (a, Solo b)
   TupSnocF (a, b, c) = (a, (b, c))
   TupSnocF (a, b, c, d) = (a, (b, c, d))
   TupSnocF (a, b, c, d, e) = (a, (b, c, d, e))
@@ -62,10 +64,12 @@ type family TupSnocF a where
   TupSnocF (a, b, c, d, e, f, g, h) = (a, (b, c, d, e, f, g, h))
   TupSnocF (a, b, c, d, e, f, g, h, i) = (a, (b, c, d, e, f, g, h, i))
   TupSnocF (a, b, c, d, e, f, g, h, i, j) = (a, (b, c, d, e, f, g, h, i, j))
-  TupSnocF a = (a, ())
 
 class TupSnoc a head tail where
   tupSnoc :: a -> (head, tail)
+
+instance TupSnoc (Solo a) a () where
+  tupSnoc (Solo a) = (a, ())
 
 instance TupSnoc (a, b) a b where
   tupSnoc (a, b) = (a, b)
@@ -95,6 +99,8 @@ instance TupSnoc (a, b, c, d, e, f, g, h, i, j) a (b, c, d, e, f, g, h, i, j) wh
   tupSnoc (a, b, c, d, e, f, g, h, i, j) = (a, (b, c, d, e, f, g, h, i, j))
 
 type family TupFstF a where
+  TupFstF () = TypeError ('Text "TupFstF: ()")
+  TupFstF (Solo a) = a
   TupFstF (a, b) = a
   TupFstF (a, b, c) = a
   TupFstF (a, b, c, d) = a
@@ -104,8 +110,6 @@ type family TupFstF a where
   TupFstF (a, b, c, d, e, f, g, h) = a
   TupFstF (a, b, c, d, e, f, g, h, i) = a
   TupFstF (a, b, c, d, e, f, g, h, i, j) = a
-  TupFstF () = TypeError ('Text "TupFstF: ()")
-  TupFstF a = a
 
 class TupFst a fst where
   tupFst :: a -> fst
@@ -146,29 +150,9 @@ class TupTail a tail where
 instance (tail ~ TupTailF a, TupSnoc a head tail) => TupTail a tail where
   tupTail = snd . tupSnoc @a @head @tail
 
-type family TupAppendF a b where
-  TupAppendF () b = b
-  TupAppendF a b = TupConsF (TupHeadF a) (TupAppendF (TupTailF a) b)
-
-class TupAppend a b c where
-  tupAppend :: a -> b -> c
-
-instance TupAppend () b b where
-  tupAppend () b = b
-
-instance
-  ( TupSnoc a head tail,
-    TupAppend tail b rest,
-    TupCons head rest res
-  ) =>
-  TupAppend a b res
-  where
-  tupAppend a b =
-    let (head, tail) = tupSnoc a
-     in tupCons @head @rest @res head (tupAppend @tail @b @rest tail b)
-
 type family Tup2ListF a where
   Tup2ListF () = '[]
+  Tup2ListF (Solo a) = '[a]
   Tup2ListF (a, b) = '[a, b]
   Tup2ListF (a, b, c) = '[a, b, c]
   Tup2ListF (a, b, c, d) = '[a, b, c, d]
@@ -178,11 +162,10 @@ type family Tup2ListF a where
   Tup2ListF (a, b, c, d, e, f, g, h) = '[a, b, c, d, e, f, g, h]
   Tup2ListF (a, b, c, d, e, f, g, h, i) = '[a, b, c, d, e, f, g, h, i]
   Tup2ListF (a, b, c, d, e, f, g, h, i, j) = '[a, b, c, d, e, f, g, h, i, j]
-  Tup2ListF a = '[a]
 
 type family List2TupF a where
   List2TupF '[] = ()
-  List2TupF '[a] = a
+  List2TupF '[a] = Solo a
   List2TupF '[a, b] = (a, b)
   List2TupF '[a, b, c] = (a, b, c)
   List2TupF '[a, b, c, d] = (a, b, c, d)
@@ -200,6 +183,9 @@ class Tup2List t h where
 instance Tup2List () '[] where
   tup2List _ = HNil
 
+instance Tup2List (Solo a) '[a] where
+  tup2List (Solo a) = a .*. HNil
+
 instance
   ( TupSnoc t head tail,
     Tup2List tail ltail
@@ -215,6 +201,9 @@ class List2Tup l t where
 
 instance List2Tup '[] () where
   list2Tup = const ()
+
+instance List2Tup '[a] (Solo a) where
+  list2Tup (HCons a HNil) = Solo a
 
 instance
   ( List2Tup ltail tail,
@@ -310,37 +299,56 @@ newtype HomTup (l :: Nat) a = HomTup [a] deriving (Show)
 
 type family ToTupF a where
   ToTupF (HomTup 0 _) = ()
+  ToTupF (HomTup 1 a) = Solo a
   ToTupF (HomTup n a) = TupConsF a (ToTupF (HomTup (n - 1) a))
   ToTupF [a] = [ToTupF a]
-  ToTupF a = a
+  ToTupF a = Solo a
 
-class ToTup a b where
+class ToTup (n :: Nat) a b where
   toTup :: a -> b
 
-instance {-# OVERLAPS #-} (ToTups a b, ToTup b c) => ToTup a c where
-  toTup = toTup @b @c . toTups @a @b
+instance {-# OVERLAPS #-} ToTup 0 [a] (HomTup 0 a) where
+  toTup _ = HomTup []
 
-instance {-# OVERLAPS #-} (ToTup a b) => ToTup [a] [b] where
-  toTup = fmap toTup
+instance
+  {-# OVERLAPS #-}
+  ( HomTupCons a (HomTup (n - 1) a) (HomTup n a)
+  ) =>
+  ToTup n [a] (HomTup n a)
+  where
+  toTup (a : as) = homTupCons a (HomTup @(n - 1) as)
 
--- instance {-# OVERLAPS #-} (ToTup a [b], Mkable f b) => ToTup a (f b) where
--- toTup = mk @f @b . toTup @a @[b]
+instance
+  {-# OVERLAPS #-}
+  ( ToTup n [a] (HomTup n a),
+    ta ~ ToTupF (HomTup n a),
+    ToTup n (HomTup n a) ta
+  ) =>
+  ToTup n [a] ta
+  where
+  toTup = toTup @n @(HomTup n a) @ta . toTup @n @[a] @(HomTup n a)
 
-instance {-# OVERLAPS #-} ToTup (HomTup 0 a) () where
+instance {-# OVERLAPS #-} (ToTups a b, ToTup n b c) => ToTup n a c where
+  toTup = toTup @n @b @c . toTups @a @b
+
+instance {-# OVERLAPS #-} (ToTup n a b) => ToTups [a] [b] where
+  toTups = fmap (toTup @n @a @b)
+
+instance {-# OVERLAPS #-} ToTup 0 (HomTup 0 a) () where
   toTup _ = ()
 
 instance
   {-# OVERLAPS #-}
-  ( ToTup (HomTup (n - 1) a) (ToTupF (HomTup (n - 1) a)),
+  ( ToTup (n - 1) (HomTup (n - 1) a) (ToTupF (HomTup (n - 1) a)),
     TupCons a (ToTupF (HomTup (n - 1) a)) t,
     t ~ ToTupF (HomTup n a)
   ) =>
-  ToTup (HomTup n a) t
+  ToTup n (HomTup n a) t
   where
   toTup (HomTup (a : as)) =
     tupCons @a @(ToTupF (HomTup (n - 1) a)) @(ToTupF (HomTup n a))
       a
-      (toTup @(HomTup (n - 1) a) @(ToTupF (HomTup (n - 1) a)) (HomTup @(n - 1) @a as))
+      (toTup @(n - 1) @(HomTup (n - 1) a) @(ToTupF (HomTup (n - 1) a)) (HomTup @(n - 1) @a as))
 
 type family ToTupsF a where
   ToTupsF () = ()
@@ -395,5 +403,5 @@ homTup p = do
   as <- count @s @m @t @u (fromIntegral n) p
   return $ mkHomTup @n @[a] @(HomTup n a) as
 
-tuples :: forall n b a s u m. (ToTup [HomTup n a] b, ToTups [a] [HomTup n a]) => ParsecT s u m [a] -> ParsecT s u m b
-tuples p = fmap (toTup @[HomTup n a] @b . toTups @[a] @[HomTup n a]) p
+tuples :: forall n a t s u m. (ToTup n (HomTup n a) t, ToTups [a] [HomTup n a]) => ParsecT s u m [a] -> ParsecT s u m [t]
+tuples p = fmap (fmap (toTup @n @(HomTup n a) @t) . toTups @[a] @[HomTup n a]) p

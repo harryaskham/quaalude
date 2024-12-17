@@ -10,6 +10,7 @@ import Control.Monad (filterM)
 import Control.Monad.Memo
 import Control.Monad.Random.Class
 import Data.Bitraversable
+import Data.Fin (Fin)
 import Data.HList hiding ((.<.))
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
@@ -21,6 +22,7 @@ import Data.Text qualified as T
 import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
+import Data.Type.Nat qualified as N
 import GHC.TypeLits
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
@@ -751,6 +753,9 @@ instance As ℤ 𝔹 where
   as from = bool 0 1 from
 
 instance As ℤ ℤ₆₄ where
+  as = fromIntegral
+
+instance (N.SNatI n) => As (Fin n) ℤ where
   as = fromIntegral
 
 instance (Applicative f, As a Bool) => As (f a) Bool where

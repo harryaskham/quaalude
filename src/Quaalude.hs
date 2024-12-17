@@ -41,6 +41,7 @@ import Data.Sequence (Seq (..))
 -- import Quaalude.Type as X
 
 import Data.Tuple.Extra as X (fst3, snd3, thd3)
+import Data.Tuple.Solo as X
 import Data.Vector as X (Vector)
 import Quaalude.Alias as X
 import Quaalude.Bits as X
