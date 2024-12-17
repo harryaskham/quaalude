@@ -293,21 +293,30 @@ instance (Eq a) => Intersectable [a] where
 instance (Eq a) => Intersectable (V.Vector a) where
   a ∩ b = mkVec $ L.intersect (V.toList a) (V.toList b)
 
-class Ixable f where
-  (!!) :: f a -> Int -> a
-  (!.) :: f a -> (Int, a) -> f a
+class Ixable i f where
+  (!!) :: f a -> i -> a
+  (!.) :: f a -> (i, a) -> f a
+  (!?) :: f a -> i -> Maybe a
 
-instance Ixable [] where
-  (!!) = (L.!!)
-  l !. (i, a) = l & element i .~ a
+instance (Integral i) => Ixable i [] where
+  l !! i = l L.!! fromIntegral i
+  l !. (i, a) = l & element (fromIntegral i) .~ a
+  l !? i = l L.!? fromIntegral i
 
-instance Ixable V.Vector where
-  (!!) = (V.!)
-  v !. (i, a) = v V.// [(i, a)]
+instance (Integral i) => Ixable i V.Vector where
+  v !! i = v V.! fromIntegral i
+  v !. (i, a) = v V.// [(fromIntegral i, a)]
+  v !? i = v V.!? fromIntegral i
 
-instance Ixable IntMap where
-  (!!) = (IM.!)
-  m !. (i, a) = IM.insert i a m
+instance (Integral i) => Ixable i SQ.Seq where
+  s !! i = let Just a = s SQ.!? fromIntegral i in a
+  s !. (i, a) = s & element (fromIntegral i) .~ a
+  s !? i = s SQ.!? fromIntegral i
+
+instance (Integral i) => Ixable i IntMap where
+  m !! i = m IM.! fromIntegral i
+  m !. (i, a) = IM.insert (fromIntegral i) a m
+  m !? k = IM.lookup (fromIntegral k) m
 
 class Gettable f k v where
   (|!) :: f k v -> k -> v

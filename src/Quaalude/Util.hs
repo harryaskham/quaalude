@@ -758,6 +758,9 @@ instance As ℤ ℤ₆₄ where
 instance (N.SNatI n) => As (Fin n) ℤ where
   as = fromIntegral
 
+instance (N.SNatI n) => As ℤ (Fin n) where
+  as = toInteger
+
 instance (Applicative f, As a Bool) => As (f a) Bool where
   as = pure . as @a @Bool
 

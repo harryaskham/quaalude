@@ -28,12 +28,13 @@ import Control.Lens as X
   )
 import Control.Monad.Memo as X hiding (isNothing)
 import Control.Monad.ST as X
+import Data.Bits as X (Bits (bit, bitSize, bitSizeMaybe, complement, isSigned, popCount, rotate, shift, testBit, xor, (.&.), (.|.)))
 import Data.Default as X
 import Data.Distributive as X
 import Data.Either as X
 import Data.HList as X (HList (..), (.*.))
 import Data.List.GroupBy as X
-import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, foldl', foldr, fromList, keys, lookup, map, mapMaybe, null, size, split, splitAt, take, toList, (\\))
+import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, foldl', foldr, fromList, keys, lookup, map, mapMaybe, null, size, split, splitAt, take, toList, (!?), (\\))
 import Data.PQueue.Prio.Min (deleteFindMin)
 import Data.Ratio as X
 import Data.Sequence (Seq (..))
