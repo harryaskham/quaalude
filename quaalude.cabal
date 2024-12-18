@@ -44,6 +44,7 @@ common common-settings
                         random-shuffle,
                         MonadRandom,
                         string-qq,
+                        binary-search,
                         hashable,
                         aeson,
                         deriving-aeson,

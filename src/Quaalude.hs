@@ -44,6 +44,7 @@ import Data.Sequence (Seq (..))
 import Data.Tuple.Extra as X (fst3, snd3, thd3)
 import Data.Tuple.Solo as X
 import Data.Vector as X (Vector)
+import Numeric.Search.Range as X
 import Quaalude.Alias as X
 import Quaalude.Bits as X
 import Quaalude.Collection as X

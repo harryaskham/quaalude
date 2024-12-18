@@ -628,6 +628,9 @@ class Takeable n f a where
 instance (Integral n) => Takeable n [] a where
   take n = L.take (fromIntegral n)
 
+instance (Integral n) => Takeable n V.Vector a where
+  take n = V.take (fromIntegral n)
+
 instance (Integral n) => Takeable n SQ.Seq a where
   take n = SQ.take (fromIntegral n)
 
@@ -636,6 +639,9 @@ class Droppable n f a where
 
 instance (Integral n) => Droppable n [] a where
   drop n = L.drop (fromIntegral n)
+
+instance (Integral n) => Droppable n V.Vector a where
+  drop n = V.drop (fromIntegral n)
 
 instance (Integral n) => Droppable n Seq a where
   drop n = SQ.drop (fromIntegral n)

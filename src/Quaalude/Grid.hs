@@ -28,7 +28,7 @@ import Quaalude.Collection
 import Quaalude.Coord
 import Quaalude.Tracers
 import Quaalude.Unary
-import Quaalude.Util (both, bothM, unjust, (.<.), (<$$>))
+import Quaalude.Util (both, bothM, unjust, (.<.), (<$$$>), (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Show qualified as TS
@@ -36,6 +36,9 @@ import Prelude hiding (filter)
 
 emptyGrid :: (Griddable Identity g k a) => g k a
 emptyGrid = runIdentity emptyGridM
+
+defGrid :: (Default a, Griddable Identity g k a) => [k] -> g k a
+defGrid cs = foldl' (\g c -> g ||. (c, def)) emptyGrid cs
 
 mkGrid :: (Griddable Identity g k a) => [(k, a)] -> g k a
 mkGrid = runIdentity . mkGridM
@@ -495,12 +498,37 @@ class (Eq a) => GridCell a where
   default toChar :: (Ord a) => a -> Char
   toChar a = charMap BM.! a
 
+class (GridCell a) => EmptyCell a where
+  emptyCell :: a -> Bool
+
+cellEmptyM :: (Griddable m g k a, EmptyCell a) => k -> g k a -> m Bool
+cellEmptyM k g = do
+  aM <- g <||?> k
+  return case aM of
+    Nothing -> False
+    Just a -> emptyCell a
+
+cellEmpty :: (Griddable Identity g k a, EmptyCell a) => k -> g k a -> Bool
+cellEmpty k g = runIdentity $ cellEmptyM k g
+
 data DotHash = Dot | Hash deriving (Eq, Ord, Bounded, Show)
+
+instance Default DotHash where
+  def = Dot
+
+instance EmptyCell DotHash where
+  emptyCell Dot = False
+  emptyCell Hash = False
 
 instance GridCell Char where
   fromChar = id
   toChar = id
   charMap = BM.empty
+
+instance EmptyCell Char where
+  emptyCell ' ' = True
+  emptyCell '.' = True
+  emptyCell _ = False
 
 instance GridCell Int where
   fromChar = digitToInt
@@ -695,7 +723,7 @@ gridLines :: (Griddable Identity g k a, Coord k) => g k a -> [[a]]
 gridLines = runIdentity . gridLinesM
 
 prettyM :: (Griddable m g k a, Coord k) => g k a -> m Text
-prettyM grid = T.pack . intercalate "\n" <$> (fmap toChar <$$> gridLinesM grid)
+prettyM grid = unlines <$> (T.pack <$$> (toChar <$$$> gridLinesM grid))
 
 pretty :: (Griddable Identity g k a, Coord k) => g k a -> Text
 pretty = runIdentity . prettyM

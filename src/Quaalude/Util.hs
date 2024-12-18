@@ -10,6 +10,7 @@ import Control.Monad (filterM)
 import Control.Monad.Memo
 import Control.Monad.Random.Class
 import Data.Bitraversable
+import Data.Default
 import Data.Fin (Fin)
 import Data.HList hiding ((.<.))
 import Data.Map.Strict (Map)
@@ -780,3 +781,11 @@ class Runnable f where
 
 instance Runnable (Memo k v) where
   run = startEvalMemo
+
+-- Defaults
+
+instance Default Bool where
+  def = False
+
+instance Default Char where
+  def = ' '
