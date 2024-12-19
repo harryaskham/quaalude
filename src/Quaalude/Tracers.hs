@@ -45,9 +45,12 @@ traceShowF f a = traceShow (f a) a
 traceTextF :: (a -> Text) -> a -> a
 traceTextF f a = traceTextLn (f a) a
 
-ptrace :: Bool -> String -> Parser a -> Parser a
-ptrace True = parserTraced
-ptrace False = const id
+ptrace' :: Bool -> String -> Parser a -> Parser a
+ptrace' True = parserTraced
+ptrace' False = const id
+
+ptrace :: Parser a -> Parser a
+ptrace = ptrace' True "ptrace"
 
 traceAnim :: (Show a) => Double -> a -> b -> b
 traceAnim fps a b = unsafePerformIO do

@@ -41,6 +41,7 @@ import Data.Sequence (Seq (..))
 -- WIP; import manually
 -- import Quaalude.Type as X
 
+import Data.Text as X (stripPrefix)
 import Data.Tuple.Extra as X (fst3, snd3, thd3)
 import Data.Tuple.Solo as X
 import Data.Vector as X (Vector)

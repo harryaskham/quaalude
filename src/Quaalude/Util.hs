@@ -776,6 +776,12 @@ type k .->. v = k -> MM k v
 (.$.) :: (Ord k) => (k .->. v) -> k -> MM k v
 (.$.) = memo
 
+(.<$>.) :: (Ord k, Functor f) => (k .->. v) -> f k -> f (MM k v)
+f .<$>. a = memo f <$> a
+
+(.=<<.) :: (Ord k, Monoid (MM k v)) => (k .->. v) -> [k] -> (MM k v)
+f .=<<. a = mconcat (f .<$>. a)
+
 class Runnable f where
   run :: f a -> a
 

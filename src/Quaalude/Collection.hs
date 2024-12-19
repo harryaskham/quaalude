@@ -172,8 +172,14 @@ infixl 1 ⊏
 
 infixl 1 ⊐
 
-splitOn :: String -> String -> [String]
-splitOn = LS.splitOn
+class SplitOnable a where
+  splitOn :: a -> a -> [a]
+
+instance (Eq a) => SplitOnable [a] where
+  splitOn = LS.splitOn
+
+instance SplitOnable Text where
+  splitOn = T.splitOn
 
 chunksOf :: Int -> [a] -> [[a]]
 chunksOf = LE.chunksOf

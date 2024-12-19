@@ -162,3 +162,8 @@ infixr 9 <>∘
 (<>!) = mconcat
 
 infixl 0 <>!
+
+(<>?) :: (Monoid a) => [Maybe a] -> [a]
+(<>?) = catMaybes
+
+infixl 0 <>?
