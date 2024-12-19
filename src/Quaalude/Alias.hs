@@ -182,3 +182,8 @@ infixr 0 ⇱
 (⇲) = flip second
 
 infixr 0 ⇲
+
+(#) :: (Monad m) => a -> m a
+(#) = return
+
+infixl 0 #
