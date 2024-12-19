@@ -167,3 +167,18 @@ infixl 0 <>!
 (<>?) = catMaybes
 
 infixl 0 <>?
+
+(±) :: (Num a) => a -> a
+(±) = signum
+
+infixl 0 ±
+
+(⇱) :: (Bifunctor p) => (a -> b) -> p a c -> p b c
+(⇱) = first
+
+infixr 0 ⇱
+
+(⇲) :: (Bifunctor p) => p b a -> (a -> c) -> p b c
+(⇲) = flip second
+
+infixr 0 ⇲

@@ -82,6 +82,9 @@ readAsIO r path = readAs r . decodeUtf8 @Text <$> readFileBS path
 (!<<) :: IO a -> a
 (!<<) = unsafePerformIO
 
+flines :: Text -> [Text]
+flines = filter (not . T.null) . T.lines
+
 readAs :: TR.Reader a -> Text -> [a]
 readAs r text = do
   let xs = fmap r . lines $ text
@@ -395,6 +398,10 @@ f &.& g = bicomp . (f &&& g)
 f &$& g = biap . bimap f g
 
 f &<$>& g = fbiap . bimap f g
+
+(&<$>) f = fbiap . first f
+
+infixl 0 &<$>
 
 f &=<<& g = fbibind . bimap f g
 
