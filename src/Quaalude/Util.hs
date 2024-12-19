@@ -741,6 +741,9 @@ instance (As a c, As b d) => As (a, b) (c, d) where
 instance (As b ℝ) => As (Σ b) ℝ where
   as = Σ . as
 
+instance (As b n) => As (Σ b) (Σ n) where
+  as (Σ n) = Σ (as n)
+
 instance As ℤ ℝ where
   as = round
 
@@ -761,9 +764,6 @@ instance (N.SNatI n) => As (Fin n) ℤ where
 
 instance (N.SNatI n) => As ℤ (Fin n) where
   as = toInteger
-
-instance (Applicative f, As a Bool) => As (f a) Bool where
-  as = pure . as @a @Bool
 
 -- Memo
 
