@@ -535,6 +535,9 @@ mkQ₁ loss a = mkQ [(loss a, a)]
 qInsert :: (Ord k) => (a -> k) -> a -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 qInsert loss a q = q |. (loss a, a)
 
+qAppend :: (Ord k) => (a -> k) -> [a] -> PQ.MinPQueue k a -> PQ.MinPQueue k a
+qAppend loss as q = foldl' (\q a -> qInsert loss a q) q as
+
 nullQ :: PQ.MinPQueue k a -> Bool
 nullQ = PQ.null
 

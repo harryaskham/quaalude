@@ -187,3 +187,5 @@ infixr 0 ⇲
 (#) = return
 
 infixl 0 #
+
+type k :|-> v = Map k v

@@ -21,8 +21,11 @@ import Data.List (groupBy)
 import Data.List.Extra (groupOn)
 import Data.Map.Strict qualified as M
 import Data.Text qualified as T
+import Data.Variant
+import Data.Variant.Types
 import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as STV
+import GHC.TypeLits
 import Quaalude.Alias
 import Quaalude.Collection
 import Quaalude.Coord
@@ -520,6 +523,122 @@ instance EmptyCell DotHash where
   emptyCell Dot = False
   emptyCell Hash = False
 
+class SymbolList (cs :: Symbol) l where
+  symbolList :: [Char]
+
+instance SymbolList "" '[] where
+  symbolList = []
+
+instance
+  ( KnownSymbol cs,
+    SymbolList cs l,
+    ConsSymbol c cs ~ css,
+    KnownChar c
+  ) =>
+  SymbolList css ((SChar c) ': l)
+  where
+  symbolList = charVal (Proxy @c) : symbolList @cs @l
+
+type family ListToSymbol l where
+  ListToSymbol '[] = ""
+  ListToSymbol (c ': l) = ConsSymbol c (ListToSymbol l)
+
+type family SymbolToList (s :: Symbol) :: [Char] where
+  SymbolToList "" = '[]
+  SymbolToList s = SymbolToListM (UnconsSymbol s)
+
+type family SymbolToListM (s :: Maybe (Char, Symbol)) :: [Char] where
+  SymbolToListM (Just '(c, s)) = c ': SymbolToList s
+  SymbolToListM Nothing = '[]
+
+type family SChars cs where
+  SChars '[] = '[]
+  SChars (c ': cs) = SChar c ': SChars cs
+
+type SymSChars s = SChars (SymbolToList s)
+
+type CharV s = V (SymSChars s)
+
+newtype Cell (cs :: Symbol) = Cell {unCell :: CharV cs}
+
+mkC ::
+  forall c cs.
+  ( SChar c :< SymSChars cs,
+    KnownChar c
+  ) =>
+  Cell cs
+mkC = Cell @cs (V (SChar @c))
+
+(□) ::
+  forall c cs.
+  ( IsLabel (ConsSymbol c cs) String,
+    SChar c :< SymSChars cs,
+    KnownChar c
+  ) =>
+  String ->
+  Cell cs
+(□) _ = mkC @c @cs
+
+deriving newtype instance (Eq (CharV cs)) => Eq (Cell cs)
+
+deriving newtype instance (Ord (CharV cs)) => Ord (Cell cs)
+
+instance {-# OVERLAPS #-} TS.Show (Cell "") where
+  show _ = ""
+
+instance
+  {-# OVERLAPS #-}
+  ( KnownChar c,
+    ConsSymbol c cs ~ css,
+    SChar c :< SymSChars css,
+    SymSChars css ~ (SChar c ': SymSChars cs),
+    TS.Show (Cell cs)
+  ) =>
+  TS.Show (Cell css)
+  where
+  show (Cell v) = case popVariantHead @(SChar c) @(SymSChars cs) v of
+    Left v' -> TS.show @(Cell cs) (Cell @cs v')
+    Right (SChar :: SChar c) -> 'C' : charVal (Proxy @c) : []
+
+instance {-# OVERLAPS #-} GridCell (Cell "") where
+  cs = []
+
+instance
+  ( GridCell (Cell cs),
+    Eq (CharV css),
+    Ord (CharV css),
+    KnownSymbol css,
+    ConsSymbol c cs ~ css,
+    SChar c :< SymSChars css,
+    KnownChar c,
+    LiftVariant (SymSChars cs) (SymSChars css)
+  ) =>
+  GridCell (Cell css)
+  where
+  cs = (Cell (V (charSing @c)), charVal (Proxy @c)) : ((first (\(Cell v) -> Cell (liftVariant v))) <$> (cs @(Cell cs)))
+
+instance {-# OVERLAPS #-} (GridCell (Cell "")) => EmptyCell (Cell "") where
+  emptyCell _ = False
+
+instance
+  {-# OVERLAPS #-}
+  ( EmptyCell (Cell cs),
+    KnownSymbol css,
+    ConsSymbol c cs ~ css,
+    Eq (CharV css),
+    Ord (CharV css),
+    KnownChar c,
+    SChar c :< SChars (SymbolToList css),
+    Remove (SChar c) (SymSChars css) ~ SymSChars cs,
+    LiftVariant (SymSChars cs) (SymSChars css)
+  ) =>
+  EmptyCell (Cell css)
+  where
+  emptyCell (Cell v) =
+    case popVariant v of
+      Left v' -> emptyCell (Cell @cs v')
+      Right (sc :: SChar c) -> emptyCell @Char (charVal (Proxy @c))
+
 instance GridCell Char where
   fromChar = id
   toChar = id
@@ -936,3 +1055,5 @@ instance
 
 instance (Swappable Map k a, Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) where
   co = swapcat . co @(Grid' k a) @(Map k a)
+
+type cs ▦ k = G k (Cell cs)
