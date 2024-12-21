@@ -772,6 +772,9 @@ instance (N.SNatI n) => As (Fin n) ℤ where
 instance (N.SNatI n) => As ℤ (Fin n) where
   as = toInteger
 
+instance As Text Char where
+  as = T.singleton
+
 -- Memo
 
 data Mℤ k = Mℤ ℤ k deriving (Ord, Eq)

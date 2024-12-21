@@ -562,22 +562,25 @@ type CharV s = V (SymSChars s)
 newtype Cell (cs :: Symbol) = Cell {unCell :: CharV cs}
 
 mkC ::
-  forall c cs.
+  forall {cs} c.
   ( SChar c :< SymSChars cs,
     KnownChar c
   ) =>
   Cell cs
 mkC = Cell @cs (V (SChar @c))
 
+instance (KnownChar c, cs ~ ConsSymbol c "") => IsLabel cs (SChar c) where
+  fromLabel = SChar @c
+
 (□) ::
-  forall c cs.
-  ( IsLabel (ConsSymbol c cs) String,
+  forall {c} {cs}.
+  ( IsLabel (ConsSymbol c "") (SChar c),
     SChar c :< SymSChars cs,
     KnownChar c
   ) =>
-  String ->
+  SChar c ->
   Cell cs
-(□) _ = mkC @c @cs
+(□) _ = mkC @c
 
 deriving newtype instance (Eq (CharV cs)) => Eq (Cell cs)
 

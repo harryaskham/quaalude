@@ -247,7 +247,7 @@ instance Sizable (PQ.MinPQueue k v) where
 instance Sizable (A.Array i e) where
   size = fromIntegral . F.length
 
-class Memberable a b where
+class Memberable a b | b -> a where
   (∈) :: a -> b -> Bool
   (∉) :: a -> b -> Bool
   a ∉ b = not $ a ∈ b
@@ -342,7 +342,7 @@ instance (Ord k) => MaybeGettable Map k v where
 instance (A.Ix i) => MaybeGettable A.Array i e where
   a |? i = if i ∈ a then Just (a |! i) else Nothing
 
-class ValueGettable f k v where
+class ValueGettable f k v | f -> v where
   (|?>) :: f -> v -> [k]
   (|!>) :: f -> v -> k
   default (|!>) :: f -> v -> k

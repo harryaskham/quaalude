@@ -116,12 +116,25 @@ nsewToDir2 'E' = DirRight
 nsewToDir2 'W' = DirLeft
 nsewToDir2 c = error $ "Invalid nsew: " <> show c
 
+fromArrow² :: Char -> Dir2
+fromArrow² = fromArrow2
+
 fromArrow2 :: Char -> Dir2
 fromArrow2 '^' = DirUp
 fromArrow2 'v' = DirDown
 fromArrow2 '>' = DirRight
 fromArrow2 '<' = DirLeft
 fromArrow2 c = error $ "Invalid arrow: " <> show c
+
+toArrow² :: Dir2 -> Char
+toArrow² = toArrow2
+
+toArrow2 :: Dir2 -> Char
+toArrow2 DirUp = '^'
+toArrow2 DirDown = 'v'
+toArrow2 DirRight = '>'
+toArrow2 DirLeft = '<'
+toArrow2 d = error $ "Invalid dir: " <> show d
 
 type Coord2' a = (a, a)
 
