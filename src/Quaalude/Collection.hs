@@ -637,6 +637,9 @@ class Takeable n f a where
 instance (Integral n) => Takeable n [] a where
   take n = L.take (fromIntegral n)
 
+instance (Integral n) => Takeable n NonEmpty a where
+  take n (a :| as) = a :| L.take (fromIntegral $ n - 1) as
+
 instance (Integral n) => Takeable n V.Vector a where
   take n = V.take (fromIntegral n)
 

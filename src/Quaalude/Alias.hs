@@ -1,5 +1,6 @@
 module Quaalude.Alias where
 
+import Control.Lens (ix)
 import Data.Complex (Complex)
 import Data.Fin (Fin)
 import Data.Type.Nat
@@ -189,3 +190,5 @@ infixr 0 ⇲
 infixl 0 #
 
 type k :|-> v = Map k v
+
+ixℤ i = ix (fromIntegral i)

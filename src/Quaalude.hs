@@ -10,17 +10,23 @@ import Control.Lens as X
     indices,
     itraversed,
     ix,
+    makeLenses,
     mapped,
     plate,
     traversed,
+    use,
+    view,
     (%%~),
+    (%=),
     (%~),
     (**~),
     (*~),
     (+~),
     (-~),
+    (.=),
     (.~),
     (//~),
+    (?~),
     (^.),
     (^..),
     (^^~),
@@ -44,7 +50,10 @@ import Data.Sequence (Seq (..))
 import Data.Text as X (stripPrefix)
 import Data.Tuple.Extra as X (fst3, snd3, thd3)
 import Data.Tuple.Solo as X
+import Data.Variant as X
+import Data.Variant.Types as X hiding (Product)
 import Data.Vector as X (Vector)
+import GHC.TypeLits as X hiding (natVal, someNatVal)
 import Numeric.Search.Range as X
 import Quaalude.Alias as X
 import Quaalude.Bits as X

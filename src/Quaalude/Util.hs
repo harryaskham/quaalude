@@ -766,6 +766,9 @@ instance As ℤ 𝔹 where
 instance As ℤ ℤ₆₄ where
   as = fromIntegral
 
+instance As ℤ₆₄ ℤ where
+  as = fromIntegral
+
 instance (N.SNatI n) => As (Fin n) ℤ where
   as = fromIntegral
 

@@ -130,3 +130,6 @@ instance (Num n, ToDecimal n (Dec n a), FromDecimal n (Dec n a), OverDecimal n (
   abs = overDecimal @n @(Dec n a) abs
   signum = overDecimal @n @(Dec n a) signum
   fromInteger = fromDecimal @n @(Dec n a) ∘ fromIntegral
+
+decDigit :: (Integral n) => n -> n -> n
+decDigit n x = x - (x `div` (10 ^ n)) ⋅ (10 ^ n)
