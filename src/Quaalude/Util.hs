@@ -242,6 +242,9 @@ mapSepWith f kvSep itemSep key value =
 mapcat :: (Ord k) => String -> Parser k -> Parser v -> Parser (Map k [v])
 mapcat kvSep key value = mapSepWith (<>) (string kvSep) eol key (pure <$> value)
 
+abc :: Parser String
+abc = many1 (oneOf "abcdefghijklmnopqrstuvwxyz")
+
 type family CParsersF args where
   CParsersF '[] = '[]
   CParsersF (arg ': args) = Parser arg ': CParsersF args
@@ -628,6 +631,17 @@ pairs (a : b : cs) = (a, b) : pairs (b : cs)
 
 triPairs :: (Unable t) => t a -> [(a, a)]
 triPairs as' = let as = un as' in [(a, b) | (i, a) <- zip [0 .. length as - 2] as, (j, b) <- zip [0 ..] as, j > i]
+
+triples :: (Unable t) => t a -> [(a, a, a)]
+triples as' =
+  let as = un as'
+   in [ (a, b, c)
+        | (i, a) <- zip [0 .. length as - 3] as,
+          (j, b) <- zip [0 .. length as - 2] as,
+          j > i,
+          (k, c) <- zip [0 .. length as - 1] as,
+          k > j
+      ]
 
 -- Early terminating search for n items in a thing
 nSameIn :: (Ord a) => Int -> [a] -> Maybe a

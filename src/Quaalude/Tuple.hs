@@ -71,8 +71,8 @@ class TupSnoc a head tail where
 instance TupSnoc (Solo a) a () where
   tupSnoc (Solo a) = (a, ())
 
-instance TupSnoc (a, b) a b where
-  tupSnoc (a, b) = (a, b)
+instance TupSnoc (a, b) a (Solo b) where
+  tupSnoc (a, b) = (a, Solo b)
 
 instance TupSnoc (a, b, c) a (b, c) where
   tupSnoc (a, b, c) = (a, (b, c))
@@ -268,6 +268,9 @@ class Trifunctor (f :: Type -> Type -> Type -> Type) where
 instance Trifunctor (,,) where
   trimap f g h (a, b, c) = (f a, g b, h c)
 
+three :: (Trifunctor f) => (a -> b) -> f a a a -> f b b b
+three f = trimap f f f
+
 class (Trifunctor f) => Thd f where
   thd :: f a b c -> c
 
@@ -405,3 +408,15 @@ homTup p = do
 
 tuples :: forall n a t s u m. (ToTup n (HomTup n a) t, ToTups [a] [HomTup n a]) => ParsecT s u m [a] -> ParsecT s u m [t]
 tuples p = fmap (fmap (toTup @n @(HomTup n a) @t) . toTups @[a] @[HomTup n a]) p
+
+instance (Eq a) => Memberable a (HomTup n a) where
+  a ∈ HomTup t = a ∈ t
+
+instance (Eq a) => Memberable a (Solo a) where
+  a ∈ Solo a' = a == a'
+
+-- instance (Eq a, Memberable a (Solo a)) => Memberable a (a, a) where
+--   a ∈ t = let (a', t') = tupSnoc @(a, a) @a @(Solo a) t in a == a' || ((∈) @a @(Solo a) a t')
+
+instance {-# OVERLAPS #-} (Eq a, Memberable a t, f a t ~ TupConsF a t, TupSnoc (f a t) a t, TupSnocF (f a t) ~ (a, t)) => Memberable a (f a t) where
+  a ∈ fat = let (a', t) = tupSnoc @(f a t) @a @t fat in a == a' || ((∈) @a @t a t)

@@ -678,3 +678,9 @@ instance Arbitrary [] a where
   arbitrarySnoc (a : as) = (a, as)
 
 instance (Ord a) => Arbitrary Set a
+
+instance (Ord k) => Arbitrary (Map k) v where
+  arbitrarySnoc = bimap snd mkMap . arbitrarySnoc . unMap
+
+arb :: (Arbitrary f a) => f a -> a
+arb = arbitrary
