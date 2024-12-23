@@ -817,8 +817,8 @@ instance Runnable (Memo k v) where
 
 -- Defaults
 
-instance Default Bool where
-  def = False
+-- instance Default Bool where
+--   def = False
 
 instance Default Char where
   def = ' '

@@ -396,6 +396,9 @@ class Deletable m k where
   (|\) :: m -> k -> m
   default (|\) :: m -> k -> m
   (|\) = flip delete
+  (|\..) :: Foldable f => m -> f k -> m
+  default (|\..) :: Foldable f => m -> f k -> m
+  xs |\.. ks = foldl' (|\) xs ks
 
 instance (Ord k) => Deletable (Map k v) k where
   delete = M.delete
@@ -657,6 +660,39 @@ instance (Integral n) => Droppable n V.Vector a where
 
 instance (Integral n) => Droppable n Seq a where
   drop n = SQ.drop (fromIntegral n)
+
+class Headable f a where
+  head' :: f a -> a
+
+instance Headable [] a where
+  head' = L.head
+
+instance Ord a => Headable Set a where
+  head' = minimum . un
+
+class Tailable f a where
+  tail' :: f a -> f a
+
+instance Tailable [] a where
+  tail' = L.tail
+
+instance Ord a => Tailable Set a where
+  tail' s = S.delete (head' s) s
+
+class Snocable f a where
+  snoc' :: f a -> (a, f a)
+  default snoc' :: (Headable f a, Tailable f a) => f a -> (a, f a)
+  snoc' xs = (head' xs, tail' xs)
+
+instance Snocable [] a
+
+instance Ord a => Snocable Set a
+
+class Consable f a where
+  cons' :: a -> f a -> f a
+
+instance Consable [] a where
+  cons' = (:)
 
 splitAt :: (Integral n, Takeable n f a, Droppable n f a) => n -> f a -> (f a, f a)
 splitAt n f = (take n f, drop n f)
