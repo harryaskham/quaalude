@@ -59,6 +59,9 @@ class Mkable f a where
 instance Mkable [] a where
   mk = id
 
+instance Mkable NonEmpty a where
+  mk (a : as) = a :| as
+
 instance Mkable V.Vector a where
   mk = mkVec
 
@@ -93,6 +96,9 @@ class Unable f where
 
 instance Unable [] where
   un = id
+
+instance Unable NonEmpty where
+  un (a :| as) = a : as
 
 instance Unable V.Vector where
   un = unVec
@@ -309,6 +315,14 @@ instance (Integral i) => Ixable i [] where
   l !. (i, a) = l & element (fromIntegral i) .~ a
   l !? i = l L.!? fromIntegral i
 
+instance (Integral i) => Ixable i NonEmpty where
+  (l :| ls) !! 0 = l
+  (l :| ls) !! i = ls L.!! fromIntegral (i - 1)
+  (l :| ls) !. (0, a) = (a :| ls)
+  (l :| ls) !. (i, a) = l :| (ls & element (fromIntegral (i - 1)) .~ a)
+  (l :| ls) !? 0 = Just l
+  (l :| ls) !? i = ls L.!? fromIntegral (i - 1)
+
 instance (Integral i) => Ixable i V.Vector where
   v !! i = v V.! fromIntegral i
   v !. (i, a) = v V.// [(fromIntegral i, a)]
@@ -396,8 +410,8 @@ class Deletable m k where
   (|\) :: m -> k -> m
   default (|\) :: m -> k -> m
   (|\) = flip delete
-  (|\..) :: Foldable f => m -> f k -> m
-  default (|\..) :: Foldable f => m -> f k -> m
+  (|\..) :: (Foldable f) => m -> f k -> m
+  default (|\..) :: (Foldable f) => m -> f k -> m
   xs |\.. ks = foldl' (|\) xs ks
 
 instance (Ord k) => Deletable (Map k v) k where
@@ -667,7 +681,7 @@ class Headable f a where
 instance Headable [] a where
   head' = L.head
 
-instance Ord a => Headable Set a where
+instance (Ord a) => Headable Set a where
   head' = minimum . un
 
 class Tailable f a where
@@ -676,7 +690,7 @@ class Tailable f a where
 instance Tailable [] a where
   tail' = L.tail
 
-instance Ord a => Tailable Set a where
+instance (Ord a) => Tailable Set a where
   tail' s = S.delete (head' s) s
 
 class Snocable f a where
@@ -686,7 +700,7 @@ class Snocable f a where
 
 instance Snocable [] a
 
-instance Ord a => Snocable Set a
+instance (Ord a) => Snocable Set a
 
 class Consable f a where
   cons' :: a -> f a -> f a
