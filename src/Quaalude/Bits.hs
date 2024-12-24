@@ -67,6 +67,9 @@ bitsToInt :: (Bits a) => a -> Integer
 bitsToInt bs =
   sum $ (\i -> if testBit bs (bitSize bs - i - 1) then 2 ^ i else 0) <$> ([0 .. bitSize bs - 1] :: [Int])
 
+intToBits :: Integer -> [Bool]
+intToBits i = reverse [testBit i n | n <- [1 .. round (logBase 2 $ fromIntegral i)]]
+
 zeroCount :: (Bits a) => a -> Int
 zeroCount bs = bitSize bs - popCount bs
 

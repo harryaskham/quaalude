@@ -245,6 +245,12 @@ mapcat kvSep key value = mapSepWith (<>) (string kvSep) eol key (pure <$> value)
 abc :: Parser String
 abc = many1 (oneOf "abcdefghijklmnopqrstuvwxyz")
 
+abc123 :: Parser String
+abc123 = many1 (oneOf "abcdefghijklmnopqrstuvwxyz0123456789")
+
+abcABC123 :: Parser String
+abcABC123 = many1 (oneOf "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+
 type family CParsersF args where
   CParsersF '[] = '[]
   CParsersF (arg ': args) = Parser arg ': CParsersF args
@@ -776,6 +782,10 @@ instance As ℝ ℤ₆₄ where
 
 instance As ℤ 𝔹 where
   as from = bool 0 1 from
+
+instance As 𝔹 ℤ where
+  as 0 = False
+  as _ = True
 
 instance As ℤ ℤ₆₄ where
   as = fromIntegral

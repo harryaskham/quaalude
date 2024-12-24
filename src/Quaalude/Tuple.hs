@@ -394,17 +394,32 @@ instance (m ~ n + 1) => HomTupCons a (HomTup n a) (HomTup m a) where
   homTupCons a (HomTup as) = HomTup (a : as)
 
 homTup ::
-  forall n a s u m t.
-  ( Stream s m t,
-    KnownNat n,
+  forall n a t u m.
+  ( KnownNat n,
+    Stream [String] m t,
     MkHomTup n [a] (HomTup n a)
   ) =>
-  ParsecT s u m a ->
-  ParsecT s u m (HomTup n a)
+  ParsecT String u m a ->
+  ParsecT String u m (HomTup n a)
 homTup p = do
   let n = natVal (Proxy @n)
-  as <- count @s @m @t @u (fromIntegral n) p
+  as <- count @String @m @Char @u (fromIntegral n) p
   return $ mkHomTup @n @[a] @(HomTup n a) as
+
+tuple ::
+  forall n a t s u m tok.
+  ( KnownNat n,
+    MkHomTup n [a] (HomTup n a),
+    Stream s m tok,
+    ToTup n (HomTup n a) t,
+    t ~ ToTupF (HomTup n a)
+  ) =>
+  ParsecT s u m a ->
+  ParsecT s u m (ToTupF (HomTup n a))
+tuple =
+  fmap (toTup @n @(HomTup n a) @t)
+    . fmap (HomTup @n @a)
+    . count @s @m @tok @u (fromIntegral $ natVal (Proxy @n))
 
 tuples :: forall n a t s u m. (ToTup n (HomTup n a) t, ToTups [a] [HomTup n a]) => ParsecT s u m [a] -> ParsecT s u m [t]
 tuples p = fmap (fmap (toTup @n @(HomTup n a) @t) . toTups @[a] @[HomTup n a]) p
