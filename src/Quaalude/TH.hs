@@ -72,7 +72,7 @@ instance EmbedInput Example where
 inputS :: (EmbedInput a) => a -> Q Exp
 inputS day = AppE (VarE 'T.unpack) <$> input day
 
-gridsT :: (Griddable Identity g k a, Packable t Text) => t -> [g k a]
+gridsT :: forall t g k a. (Griddable Identity g k a, Packable t Text) => t -> [g k a]
 gridsT s = readGrid <$> T.splitOn "\n\n" (pack s)
 
 grids :: (Int -> Q Exp) -> Int -> Q Exp
