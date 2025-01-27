@@ -277,33 +277,33 @@ instance (CFuncArgs (next ': argParsers)) => CFuncArgs (Parser arg ': next ': ar
     rest <- cfuncArgs rest
     return $ arg .*. rest
 
-data FnName = FnName {unFnName :: String}
+data CFnName = CFnName {unCFnName :: String}
 
-instance (KnownSymbol s) => IsLabel s FnName where
-  fromLabel = FnName (symbolVal (Proxy @s))
+instance (KnownSymbol s) => IsLabel s CFnName where
+  fromLabel = CFnName (symbolVal (Proxy @s))
 
 cfunc ::
   ( CFuncArgsF (CParsersF args) ~ args,
     CFuncArgs (CParsersF args)
   ) =>
-  FnName ->
+  CFnName ->
   HList (CParsersF args) ->
   Parser (String, HList args)
 cfunc label argParsers =
-  (,) <$> string (unFnName label) <*> parend (cfuncArgs argParsers)
+  (,) <$> string (unCFnName label) <*> parend (cfuncArgs argParsers)
 
 cfunc_ ::
-  FnName ->
+  CFnName ->
   Parser String
 cfunc_ label =
-  string (unFnName label) <* string "()"
+  string (unCFnName label) <* string "()"
 
 cargs ::
   forall args name.
   ( CFuncArgs (CParsersF args),
     CFuncArgsF (CParsersF args) ~ args
   ) =>
-  FnName ->
+  CFnName ->
   HList (CParsersF args) ->
   Parser (HList args)
 cargs label argParsers = snd <$> cfunc label argParsers

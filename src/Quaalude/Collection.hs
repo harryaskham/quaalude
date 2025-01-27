@@ -558,7 +558,7 @@ qAppend loss as q = foldl' (\q a -> qInsert loss a q) q as
 nullQ :: PQ.MinPQueue k a -> Bool
 nullQ = PQ.null
 
-type Q = PQ.MinPQueue
+type MinQ = PQ.MinPQueue
 
 pattern NullQ <- (nullQ -> True)
 
@@ -627,8 +627,6 @@ instance (Ord k, Ord v, Applicative m, Monoid (m k)) => SwapWithable Map m k v
 
 swapcat :: (SwapWithable f m a b, Semigroup (m a)) => f a b -> f b (m a)
 swapcat = swapWith (<>)
-
-type MinQ = PQ.MinPQueue
 
 class Filterable f a where
   filter :: (a -> Bool) -> f a -> f a
