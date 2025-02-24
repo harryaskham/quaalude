@@ -1,0 +1,157 @@
+name: quaalude
+version: 0.2.0.0
+github: harryaskham/quaalude
+author: "Harry Askham"
+maintainer: "harryaskham@gmail.com"
+language: Haskell2010
+
+dependencies:
+  - name: base
+    version: ">=4.19.0.0"
+    mixin:
+      - hiding (Prelude)
+  - name: relude
+    mixin:
+      - (Relude as Prelude, Relude.Unsafe)
+      - ""
+  - pqueue
+  - bytestring
+  - parsec
+  - megaparsec
+  - replace-megaparsec
+  - groupBy
+  - vector
+  - vector-space
+  - array
+  - extra
+  - split
+  - data-default
+  - text
+  - containers
+  - unordered-containers
+  - mtl
+  - bimap
+  - mod
+  - semirings
+  - distributive
+  - OneTuple
+  - template-haskell
+  - file-embed
+  - utility-ht
+  - monad-memo
+  - benchpress
+  - fin
+  - MissingH
+  - safe
+  - linear
+  - lens
+  - bitwise
+  - random
+  - ansi-terminal
+  - random-shuffle
+  - MonadRandom
+  - string-qq
+  - binary-search
+  - variant
+  - hashable
+  - aeson
+  - deriving-aeson
+  - raw-strings-qq
+  - aeson-casing
+  - barbies
+  - req
+  - HList
+
+default-extensions:
+  - OverloadedStrings
+  - OverloadedLabels
+  - TupleSections
+  - ViewPatterns
+  - StandaloneKindSignatures
+  - DerivingVia
+  - LambdaCase
+  - MultiWayIf
+  - QuantifiedConstraints
+  - ConstraintKinds
+  - MonadComprehensions
+  - UnicodeSyntax
+  - BlockArguments
+  - TypeFamilyDependencies
+  - ImportQualifiedPost
+  - EmptyCase
+  - StarIsType
+  - PostfixOperators
+  - FlexibleContexts
+  - FlexibleInstances
+  - InstanceSigs
+  - MultiParamTypeClasses
+  - UndecidableInstances
+  - QuasiQuotes
+  - NamedFieldPuns
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveLift
+  - DeriveAnyClass
+  - DeriveTraversable
+  - DerivingStrategies
+  - GeneralizedNewtypeDeriving
+  - StandaloneDeriving
+  - ScopedTypeVariables
+  - RankNTypes
+  - TypeApplications
+  - TypeOperators
+  - TypeFamilies
+  - ApplicativeDo
+  - DefaultSignatures
+  - PatternSynonyms
+  - ExistentialQuantification
+  - FunctionalDependencies
+  - GADTs
+  - DataKinds
+  - PolyKinds
+  - StrictData
+  - TemplateHaskell
+  - RecordWildCards
+  - NamedWildCards
+  - PartialTypeSignatures
+  - AllowAmbiguousTypes
+  - ImpredicativeTypes
+  - UndecidableSuperClasses
+
+ghc-options:
+  - -fprint-potential-instances
+  - -Weverything
+  - -Wno-unrecognised-warning-flags
+  - -Wno-star-is-type
+  - -Wno-missing-signatures
+  - -Wno-orphans
+  - -Wno-implicit-prelude
+  - -Wno-unused-imports
+  - -Wno-unused-packages
+  - -Wno-missing-kind-signatures
+  - -Wno-missing-poly-kind-signatures
+  - -Wno-term-variable-capture
+  - -Wno-missing-export-lists
+  - -Wno-missing-deriving-strategies
+  - -Wno-missing-safe-haskell-mode
+  - -Wno-missing-exported-signatures
+  - -Wno-missing-import-lists
+  - -Wno-missed-specialisations
+  - -Wno-all-missed-specialisations
+  - -Wno-unsafe
+  - -Wno-safe
+  - -Wno-deriving-defaults
+  - -Wno-missing-local-signatures
+  - -Wno-monomorphism-restriction
+  - -Wno-missing-home-modules
+  - -Wno-name-shadowing
+  - -Wno-type-defaults
+  - -Wno-incomplete-patterns
+  - -Wno-incomplete-uni-patterns
+  - -Wno-prepositive-qualified-module
+  - -Wno-missing-role-annotations
+  - -Wno-operator-whitespace
+
+library:
+  source-dirs: src

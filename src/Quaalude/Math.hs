@@ -86,7 +86,7 @@ instance (ToDigit n a, ToDecimal n [a]) => ToDecimal n (Seq a) where
 class (FromDigits n a) => FromDecimal n a where
   fromDecimal :: n -> a
 
-instance (FromDigits n [a]) => FromDigits n (Seq a) where
+instance (FromDigits n [a], Integral n) => FromDigits n (Seq a) where
   fromDigits = fromDigits ∘ toList
 
 instance (FromDigits n [a], FromDigit n a, ToDigit n a, Show n) => FromDecimal n [a] where
