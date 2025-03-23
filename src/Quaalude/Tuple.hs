@@ -19,6 +19,22 @@ type family TupConsF a as where
   TupConsF a (b, c, d, e, f, g, h) = (a, b, c, d, e, f, g, h)
   TupConsF a (b, c, d, e, f, g, h, i) = (a, b, c, d, e, f, g, h, i)
   TupConsF a (b, c, d, e, f, g, h, i, j) = (a, b, c, d, e, f, g, h, i, j)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k) = (a, b, c, d, e, f, g, h, i, j, k)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l) = (a, b, c, d, e, f, g, h, i, j, k, l)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m) = (a, b, c, d, e, f, g, h, i, j, k, l, m)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y)
+  TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
 
 type a × b = (a, b)
 
@@ -26,10 +42,10 @@ class TupCons a b c where
   tupCons :: a -> b -> c
 
 instance TupCons a () (Solo a) where
-  tupCons a () = Solo a
+  tupCons a () = MkSolo a
 
 instance TupCons a (Solo b) (a, b) where
-  tupCons a (Solo b) = (a, b)
+  tupCons a (MkSolo b) = (a, b)
 
 instance TupCons a (b, c) (a, b, c) where
   tupCons a (b, c) = (a, b, c)
@@ -52,6 +68,57 @@ instance TupCons a (b, c, d, e, f, g, h) (a, b, c, d, e, f, g, h) where
 instance TupCons a (b, c, d, e, f, g, h, i) (a, b, c, d, e, f, g, h, i) where
   tupCons a (b, c, d, e, f, g, h, i) = (a, b, c, d, e, f, g, h, i)
 
+instance TupCons a (b, c, d, e, f, g, h, i, j) (a, b, c, d, e, f, g, h, i, j) where
+  tupCons a (b, c, d, e, f, g, h, i, j) = (a, b, c, d, e, f, g, h, i, j)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k) (a, b, c, d, e, f, g, h, i, j, k) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k) = (a, b, c, d, e, f, g, h, i, j, k)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l) (a, b, c, d, e, f, g, h, i, j, k, l) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l) = (a, b, c, d, e, f, g, h, i, j, k, l)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m) (a, b, c, d, e, f, g, h, i, j, k, l, m) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m) = (a, b, c, d, e, f, g, h, i, j, k, l, m)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n) (a, b, c, d, e, f, g, h, i, j, k, l, m, n) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y)
+
+instance TupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) where
+  tupCons a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
+
 type family TupSnocF a where
   TupSnocF () = TypeError ('Text "TupSnocF: ()")
   TupSnocF (Solo a) = (a, ())
@@ -64,15 +131,31 @@ type family TupSnocF a where
   TupSnocF (a, b, c, d, e, f, g, h) = (a, (b, c, d, e, f, g, h))
   TupSnocF (a, b, c, d, e, f, g, h, i) = (a, (b, c, d, e, f, g, h, i))
   TupSnocF (a, b, c, d, e, f, g, h, i, j) = (a, (b, c, d, e, f, g, h, i, j))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k) = (a, (b, c, d, e, f, g, h, i, j, k))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l) = (a, (b, c, d, e, f, g, h, i, j, k, l))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m) = (a, (b, c, d, e, f, g, h, i, j, k, l, m))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y))
+  TupSnocF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z))
 
 class TupSnoc a head tail where
   tupSnoc :: a -> (head, tail)
 
 instance TupSnoc (Solo a) a () where
-  tupSnoc (Solo a) = (a, ())
+  tupSnoc (MkSolo a) = (a, ())
 
 instance TupSnoc (a, b) a (Solo b) where
-  tupSnoc (a, b) = (a, Solo b)
+  tupSnoc (a, b) = (a, MkSolo b)
 
 instance TupSnoc (a, b, c) a (b, c) where
   tupSnoc (a, b, c) = (a, (b, c))
@@ -98,6 +181,54 @@ instance TupSnoc (a, b, c, d, e, f, g, h, i) a (b, c, d, e, f, g, h, i) where
 instance TupSnoc (a, b, c, d, e, f, g, h, i, j) a (b, c, d, e, f, g, h, i, j) where
   tupSnoc (a, b, c, d, e, f, g, h, i, j) = (a, (b, c, d, e, f, g, h, i, j))
 
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k) a (b, c, d, e, f, g, h, i, j, k) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k) = (a, (b, c, d, e, f, g, h, i, j, k))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l) a (b, c, d, e, f, g, h, i, j, k, l) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l) = (a, (b, c, d, e, f, g, h, i, j, k, l))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m) a (b, c, d, e, f, g, h, i, j, k, l, m) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m) = (a, (b, c, d, e, f, g, h, i, j, k, l, m))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n) a (b, c, d, e, f, g, h, i, j, k, l, m, n) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y))
+
+instance TupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) where
+  tupSnoc (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = (a, (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z))
+
 type family TupFstF a where
   TupFstF () = TypeError ('Text "TupFstF: ()")
   TupFstF (Solo a) = a
@@ -110,6 +241,22 @@ type family TupFstF a where
   TupFstF (a, b, c, d, e, f, g, h) = a
   TupFstF (a, b, c, d, e, f, g, h, i) = a
   TupFstF (a, b, c, d, e, f, g, h, i, j) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = a
+  TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = a
 
 class TupFst a fst where
   tupFst :: a -> fst
@@ -162,6 +309,22 @@ type family Tup2ListF a where
   Tup2ListF (a, b, c, d, e, f, g, h) = '[a, b, c, d, e, f, g, h]
   Tup2ListF (a, b, c, d, e, f, g, h, i) = '[a, b, c, d, e, f, g, h, i]
   Tup2ListF (a, b, c, d, e, f, g, h, i, j) = '[a, b, c, d, e, f, g, h, i, j]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k) = '[a, b, c, d, e, f, g, h, i, j, k]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l) = '[a, b, c, d, e, f, g, h, i, j, k, l]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m) = '[a, b, c, d, e, f, g, h, i, j, k, l, m]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y]
+  Tup2ListF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z]
 
 type family List2TupF a where
   List2TupF '[] = ()
@@ -175,6 +338,22 @@ type family List2TupF a where
   List2TupF '[a, b, c, d, e, f, g, h] = (a, b, c, d, e, f, g, h)
   List2TupF '[a, b, c, d, e, f, g, h, i] = (a, b, c, d, e, f, g, h, i)
   List2TupF '[a, b, c, d, e, f, g, h, i, j] = (a, b, c, d, e, f, g, h, i, j)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k] = (a, b, c, d, e, f, g, h, i, j, k)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l] = (a, b, c, d, e, f, g, h, i, j, k, l)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m] = (a, b, c, d, e, f, g, h, i, j, k, l, m)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y)
+  List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
   List2TupF e = TypeError ('Text "List2TupF: " ':<>: 'ShowType e)
 
 class Tup2List t h where
@@ -184,7 +363,7 @@ instance Tup2List () '[] where
   tup2List _ = HNil
 
 instance Tup2List (Solo a) '[a] where
-  tup2List (Solo a) = a .*. HNil
+  tup2List (MkSolo a) = a .*. HNil
 
 instance
   ( TupSnoc t head tail,
@@ -203,7 +382,7 @@ instance List2Tup '[] () where
   list2Tup = const ()
 
 instance List2Tup '[a] (Solo a) where
-  list2Tup (HCons a HNil) = Solo a
+  list2Tup (HCons a HNil) = MkSolo a
 
 instance
   ( List2Tup ltail tail,
@@ -428,7 +607,7 @@ instance (Eq a) => Memberable a (HomTup n a) where
   a ∈ HomTup t = a ∈ t
 
 instance (Eq a) => Memberable a (Solo a) where
-  a ∈ Solo a' = a == a'
+  a ∈ MkSolo a' = a == a'
 
 -- instance (Eq a, Memberable a (Solo a)) => Memberable a (a, a) where
 --   a ∈ t = let (a', t') = tupSnoc @(a, a) @a @(Solo a) t in a == a' || ((∈) @a @(Solo a) a t')

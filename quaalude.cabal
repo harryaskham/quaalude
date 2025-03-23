@@ -26,11 +26,13 @@ library
       Quaalude.Compose
       Quaalude.Coord
       Quaalude.Encoding.JSON
+      Quaalude.Encoding.JSON.Instances
       Quaalude.Encoding.JSON.TH
       Quaalude.Grid
       Quaalude.Math
       Quaalude.Megaparsec
       Quaalude.Records
+      Quaalude.Show
       Quaalude.TH
       Quaalude.Tracers
       Quaalude.Tuple

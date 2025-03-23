@@ -63,11 +63,13 @@ import Quaalude.Collection as X
 import Quaalude.Compose as X
 import Quaalude.Coord as X
 import Quaalude.Encoding.JSON as X
+import Quaalude.Encoding.JSON.Instances as X
 import Quaalude.Encoding.JSON.TH as X
 import Quaalude.Grid as X
 import Quaalude.Math as X
 import Quaalude.Megaparsec as X
 import Quaalude.Records as X
+import Quaalude.Show as X
 import Quaalude.TH as X
 import Quaalude.Tracers as X
 import Quaalude.Tuple as X
