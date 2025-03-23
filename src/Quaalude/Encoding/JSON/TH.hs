@@ -3,9 +3,7 @@ module Quaalude.Encoding.JSON.TH where
 import Barbies
 import Barbies.Bare (Covered)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Aeson.GADT.TH qualified as GADTAeson
 import Data.Aeson.TH (deriveJSON)
-import Data.GADT.Show.TH qualified as GADTShow
 import Deriving.Aeson (StringModifier)
 import Deriving.Aeson.Stock (PrefixedSnake)
 import Language.Haskell.TH (Dec, Name, Q, Type (VarT), conT, mkName)
@@ -56,10 +54,3 @@ deriveJSONCamelRemovingPrefix name = do
     ''PrefixedCamelOmitNothingUntagged
     deriveJSONPrefixed
     [name]
-
--- Reexports
-deriveJSONGADT :: Name -> Q [Dec]
-deriveJSONGADT = GADTAeson.deriveJSONGADT
-
-deriveGShow :: Name -> Q [Dec]
-deriveGShow = GADTShow.deriveGShow
