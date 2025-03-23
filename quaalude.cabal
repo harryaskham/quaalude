@@ -108,6 +108,7 @@ library
     , OneTuple
     , aeson
     , aeson-casing
+    , aeson-gadt-th
     , ansi-terminal
     , array
     , barbies
@@ -119,6 +120,7 @@ library
     , bytestring
     , containers
     , data-default
+    , dependent-sum-template
     , deriving-aeson
     , distributive
     , extra
@@ -142,6 +144,7 @@ library
     , req
     , safe
     , semirings
+    , some
     , split
     , string-qq
     , template-haskell

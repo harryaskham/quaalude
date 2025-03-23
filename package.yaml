@@ -56,6 +56,9 @@ dependencies:
   - hashable
   - aeson
   - deriving-aeson
+  - aeson-gadt-th
+  - some
+  - dependent-sum-template
   - raw-strings-qq
   - aeson-casing
   - barbies
