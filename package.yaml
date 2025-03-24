@@ -64,6 +64,8 @@ dependencies:
   - barbies
   - req
   - HList
+  - tagged
+  - named
 
 default-extensions:
   - OverloadedStrings

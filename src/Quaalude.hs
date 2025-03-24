@@ -69,6 +69,7 @@ import Quaalude.Grid as X
 import Quaalude.Math as X
 import Quaalude.Megaparsec as X
 import Quaalude.Records as X
+import Quaalude.Reducible as X
 import Quaalude.Show as X
 import Quaalude.TH as X
 import Quaalude.Tracers as X

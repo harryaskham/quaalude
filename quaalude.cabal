@@ -32,6 +32,7 @@ library
       Quaalude.Math
       Quaalude.Megaparsec
       Quaalude.Records
+      Quaalude.Reducible
       Quaalude.Show
       Quaalude.TH
       Quaalude.Tracers
@@ -136,6 +137,7 @@ library
     , mod
     , monad-memo
     , mtl
+    , named
     , parsec
     , pqueue
     , random
@@ -149,6 +151,7 @@ library
     , some
     , split
     , string-qq
+    , tagged
     , template-haskell
     , text
     , unordered-containers
