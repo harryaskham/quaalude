@@ -5,7 +5,6 @@ import Data.Tagged (Tagged)
 import Data.Text qualified as T
 import GHC.TypeLits
 import Named
-import Quaalude.Described
 
 data ArgDesc (desc :: Symbol) = ArgDesc
 
