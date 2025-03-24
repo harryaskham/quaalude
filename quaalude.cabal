@@ -25,6 +25,7 @@ library
       Quaalude.Collection
       Quaalude.Compose
       Quaalude.Coord
+      Quaalude.Described
       Quaalude.Encoding.JSON
       Quaalude.Encoding.JSON.Instances
       Quaalude.Encoding.JSON.TH

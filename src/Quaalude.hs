@@ -62,6 +62,7 @@ import Quaalude.Bits as X
 import Quaalude.Collection as X
 import Quaalude.Compose as X
 import Quaalude.Coord as X
+import Quaalude.Described as X
 import Quaalude.Encoding.JSON as X
 import Quaalude.Encoding.JSON.Instances as X
 import Quaalude.Encoding.JSON.TH as X
