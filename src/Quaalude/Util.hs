@@ -299,7 +299,7 @@ cfunc_ label =
   string (unCFnName label) <* string "()"
 
 cargs ::
-  forall args name.
+  forall args.
   ( CFuncArgs (CParsersF args),
     CFuncArgsF (CParsersF args) ~ args
   ) =>

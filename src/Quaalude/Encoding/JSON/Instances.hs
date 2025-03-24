@@ -4,10 +4,15 @@ import qualified Data.Aeson.Encoding as E
 import qualified Data.Aeson.Encoding.Internal as E (InArray, comma, econcat, key, retagEncoding)
 import Data.Aeson.Types
 import Data.HList
+import Data.HList.Record
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import Quaalude.Collection
 import Quaalude.Tuple
+import GHC.TypeLits
+import qualified Data.Text as T
+import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as KM
 
 tupleToJSON ∷ forall a t u. (ToJSON a, TupSnoc u a t, ToJSON t) => u -> Value
 tupleToJSON u =
@@ -134,3 +139,40 @@ instance (FromJSON a, FromJSON (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, 
   => FromJSON (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) where
   parseJSON =
     tupleFromJSON @a @(b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) @(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
+
+newtype TaggedKV k v = TaggedKV { unTaggedKV :: Tagged k v }
+
+instance (KnownSymbol k, ToJSON v) => ToJSON (TaggedKV k v) where
+  toJSON (TaggedKV (Tagged v)) =
+    let key = fromString $ symbolVal (Proxy @k)
+     in object [key .= toJSON v]
+
+instance (KnownSymbol k, FromJSON v) => FromJSON (TaggedKV k v) where
+  parseJSON =
+    let (key :: Key) = fromString $ symbolVal (Proxy @k)
+     in withObject "Record" (\o -> TaggedKV . (Label @k .=.) <$> o .: key)
+
+instance ToJSON (Record '[]) where
+  toJSON _ = emptyObject
+
+instance (ToJSON (Record rest), ToJSON (TaggedKV k v))
+  => ToJSON (Record (Tagged k v ': rest)) where
+  toJSON (Record (HCons (Tagged v) rest)) =
+    let vValue = toJSON @(TaggedKV k v) (TaggedKV @k (Tagged v))
+        restValue = toJSON @(Record rest) (Record rest)
+    in case (vValue, restValue) of
+         (Object vObj, Object restObj) -> Object (vObj <> restObj)
+         _ -> error "Expected object when encoding Record"
+
+
+instance FromJSON (Record '[]) where
+  parseJSON _ = return emptyRecord
+
+instance (FromJSON (Record rest), FromJSON a, KnownSymbol name)
+  => FromJSON (Record (Tagged name a ': rest)) where
+  parseJSON = withObject "Record" $ \obj -> do
+    let keyName = symbolVal (Proxy @name)
+    let key = Key.fromString keyName
+    val <- obj .: key
+    Record rest <- parseJSON @(Record rest) (Object obj)
+    return . Record $ HCons (Tagged val) rest
