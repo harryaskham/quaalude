@@ -15,6 +15,6 @@ snakeCaseNoPrefix :: String -> String -> String
 snakeCaseNoPrefix prefix = snakeCase . dropPrefix prefix
 
 -- Unwrap a Record to its underlying typelevel list
-type family UnRecord record :: [*]where
+type family UnRecord record :: [*] where
   UnRecord (Record r) = r
   UnRecord e = TypeError ('Text "UnRecord: " ':<>: 'ShowType e)
