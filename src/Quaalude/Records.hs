@@ -1,7 +1,9 @@
 module Quaalude.Records where
 
 import Data.Aeson.Casing (snakeCase)
-import Data.HList (Record, ErrShowType)
+import Data.HList
+import Data.HList.HList
+import Data.HList.Record
 import GHC.TypeLits
 
 -- Convenience function to drop i.e. _llamaRequest... from field names when deriving JSON.
@@ -18,3 +20,67 @@ snakeCaseNoPrefix prefix = snakeCase . dropPrefix prefix
 type family UnRecord record :: [*] where
   UnRecord (Record r) = r
   UnRecord e = TypeError ('Text "UnRecord: " ':<>: 'ShowType e)
+
+-- Records whose values are all Maybe and can be created with all Nothing values
+class NothingsR l where
+  nothingsR :: Record l
+
+instance NothingsR '[] where
+  nothingsR = emptyRecord
+
+instance
+  ( NothingsR xs,
+    HLabelSet (Label name ': LabelsOf xs),
+    HAllTaggedLV xs
+  ) =>
+  NothingsR (Tagged name (Maybe x) ': xs)
+  where
+  nothingsR = Label @name .=. Nothing .*. nothingsR @xs
+
+-- Requires that all fields in 'to' are optional so we can populate them if not present in 'from'
+class (NothingsR to) => ConvertRecord from to where
+  convertRecord :: Record from -> Record to
+  default convertRecord :: (from ~ to) => Record from -> Record to
+  convertRecord = id
+
+instance
+  ( NothingsR to,
+    HAllTaggedLV to,
+    HLabelSet (LabelsOf to),
+    UnionSymRec to from both,
+    H2ProjectByLabels (LabelsOf to) both to onlyFrom
+  ) =>
+  ConvertRecord from to
+  where
+  convertRecord from =
+    -- Union preferring the Just values from 'from' over the Nothing values from 'to' on overlap
+    let both :: Record both
+        both = snd (unionSR (nothingsR @to) from)
+        -- Retain only to-labels from one side of the symmetric union
+        to :: Record to
+        to = hProjectByLabels (Proxy @(LabelsOf to)) both
+     in to
+
+fromTest :: Record '[Tagged "a" (Maybe Int), Tagged "b" (Maybe Int)]
+fromTest = Label @"a" .=. Just 1 .*. Label @"b" .=. Just 2 .*. emptyRecord
+
+fromTest2 :: Record '[Tagged "a" (Maybe Int)]
+fromTest2 = Label @"a" .=. Just 1 .*. emptyRecord
+
+toTest1 :: Record '[Tagged "a" (Maybe Int), Tagged "c" (Maybe Text)]
+toTest1 = convertRecord fromTest
+
+toTest2 :: Record '[Tagged "b" (Maybe Int), Tagged "a" (Maybe Int)]
+toTest2 = convertRecord fromTest
+
+toTest3 :: Record '[Tagged "c" (Maybe Int), Tagged "a" (Maybe Int)]
+toTest3 = convertRecord fromTest2
+
+toTest4 :: Record '[Tagged "a" (Maybe Int)]
+toTest4 = convertRecord fromTest
+
+toTest5 :: Record '[Tagged "c" (Maybe Int)]
+toTest5 = convertRecord fromTest
+
+
+

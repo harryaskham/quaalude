@@ -30,6 +30,7 @@ library
       Quaalude.Encoding.JSON.Instances
       Quaalude.Encoding.JSON.TH
       Quaalude.Grid
+      Quaalude.Lists
       Quaalude.Math
       Quaalude.Megaparsec
       Quaalude.Records
