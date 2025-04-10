@@ -60,27 +60,3 @@ instance
         to :: Record to
         to = hProjectByLabels (Proxy @(LabelsOf to)) both
      in to
-
-fromTest :: Record '[Tagged "a" (Maybe Int), Tagged "b" (Maybe Int)]
-fromTest = Label @"a" .=. Just 1 .*. Label @"b" .=. Just 2 .*. emptyRecord
-
-fromTest2 :: Record '[Tagged "a" (Maybe Int)]
-fromTest2 = Label @"a" .=. Just 1 .*. emptyRecord
-
-toTest1 :: Record '[Tagged "a" (Maybe Int), Tagged "c" (Maybe Text)]
-toTest1 = convertRecord fromTest
-
-toTest2 :: Record '[Tagged "b" (Maybe Int), Tagged "a" (Maybe Int)]
-toTest2 = convertRecord fromTest
-
-toTest3 :: Record '[Tagged "c" (Maybe Int), Tagged "a" (Maybe Int)]
-toTest3 = convertRecord fromTest2
-
-toTest4 :: Record '[Tagged "a" (Maybe Int)]
-toTest4 = convertRecord fromTest
-
-toTest5 :: Record '[Tagged "c" (Maybe Int)]
-toTest5 = convertRecord fromTest
-
-
-
