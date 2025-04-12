@@ -122,6 +122,11 @@ deriving instance Functor Σ
 
 instance Applicative Σ where
   pure = Σ
+  liftA2 f (Σ a) (Σ b) = Σ (f a b)
+
+instance Monad Σ where
+  return = pure
+  Σ a >>= f = f a
 
 instance (Num a) => Semigroup (Σ a) where
   Σ a <> Σ b = Σ (a + b)
@@ -140,8 +145,11 @@ deriving instance Functor Π
 
 instance Applicative Π where
   pure = Π
+  liftA2 f (Π a) (Π b) = Π (f a b)
 
-deriving instance Monad Π
+instance Monad Π where
+  return = pure
+  Π a >>= f = f a
 
 instance (Num a) => Semigroup (Π a) where
   Π a <> Π b = Π (a * b)

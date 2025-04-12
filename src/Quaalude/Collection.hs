@@ -71,6 +71,7 @@ instance Mkable Seq a where
 instance (Ord a) => Mkable Set a where
   mk = mkSet
 
+pattern Seq₁ :: a -> Seq a
 pattern Seq₁ a = a SQ.:<| SQ.Empty
 
 mk₁ :: (Mkable f a) => a -> f a
@@ -316,12 +317,12 @@ instance (Integral i) => Ixable i [] where
   l !? i = l L.!? fromIntegral i
 
 instance (Integral i) => Ixable i NonEmpty where
-  (l :| ls) !! 0 = l
-  (l :| ls) !! i = ls L.!! fromIntegral (i - 1)
-  (l :| ls) !. (0, a) = (a :| ls)
+  (l :| _) !! 0 = l
+  (_ :| ls) !! i = ls L.!! fromIntegral (i - 1)
+  (_ :| ls) !. (0, a) = (a :| ls)
   (l :| ls) !. (i, a) = l :| (ls & element (fromIntegral (i - 1)) .~ a)
-  (l :| ls) !? 0 = Just l
-  (l :| ls) !? i = ls L.!? fromIntegral (i - 1)
+  (l :| _) !? 0 = Just l
+  (_ :| ls) !? i = ls L.!? fromIntegral (i - 1)
 
 instance (Integral i) => Ixable i V.Vector where
   v !! i = v V.! fromIntegral i
@@ -360,7 +361,9 @@ class ValueGettable f k v | f -> v where
   (|?>) :: f -> v -> [k]
   (|!>) :: f -> v -> k
   default (|!>) :: f -> v -> k
-  xs |!> v = U.head (xs |?> v)
+  xs |!> v = case (xs |?> v) of
+    [] -> error "ValueGettable |!>: not found"
+    (k : _) -> k
 
 instance (Eq a) => ValueGettable [a] Int a where
   l |?> a = L.elemIndices a l
@@ -394,7 +397,7 @@ instance (A.Ix i) => Modifiable A.Array i e where
 class Keysable f k where
   keys :: f -> [k]
 
-instance (Ord k) => Keysable (Map k v) k where
+instance Keysable (Map k v) k where
   keys = M.keys
 
 class Valuesable f k v where
@@ -560,12 +563,15 @@ nullQ = PQ.null
 
 type MinQ = PQ.MinPQueue
 
+pattern NullQ :: PQ.MinPQueue k a
 pattern NullQ <- (nullQ -> True)
 
+pattern (:<!) :: Ord k => (k, a) -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 pattern ka :<! q <- (PQ.deleteFindMin -> (ka, q))
   where
     ka :<! q = q |. ka
 
+pattern (:<!!) :: Ord k => a -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 pattern a :<!! q <- (first snd . PQ.deleteFindMin -> (a, q))
 
 (<!) :: (Ord k) => PQ.MinPQueue k a -> ((k, a), PQ.MinPQueue k a)
@@ -578,10 +584,14 @@ mkArray :: (A.Ix i) => (i, i) -> [(i, e)] -> A.Array i e
 mkArray = A.array
 
 uhead :: [a] -> a
-uhead = U.head
+uhead = \case
+  [] -> error "uhead: empty list"
+  (x : _) -> x
 
 utail :: [a] -> [a]
-utail = U.tail
+utail = \case
+  [] -> error "utail: empty list"
+  (_ : xs) -> xs
 
 uinit :: [a] -> [a]
 uinit = U.init
@@ -618,12 +628,12 @@ instance Swappable (,) a b where
 
 class SwapWithable f m a b where
   swapWith :: (m a -> m a -> m a) -> f a b -> f b (m a)
-  default swapWith :: (Applicative m, Ord b, Monoid (m a), UnableKey f, MkWithable f) => (m a -> m a -> m a) -> f a b -> f b (m a)
+  default swapWith :: (Applicative m, Ord b, UnableKey f, MkWithable f) => (m a -> m a -> m a) -> f a b -> f b (m a)
   swapWith f = mkWith f . fmap (second pure . Prelude.swap) . unKey
 
 instance (Ord k, Ord v) => Swappable Map k v
 
-instance (Ord k, Ord v, Applicative m, Monoid (m k)) => SwapWithable Map m k v
+instance (Ord k, Ord v, Applicative m) => SwapWithable Map m k v
 
 swapcat :: (SwapWithable f m a b, Semigroup (m a)) => f a b -> f b (m a)
 swapcat = swapWith (<>)
@@ -677,7 +687,9 @@ class Headable f a where
   head' :: f a -> a
 
 instance Headable [] a where
-  head' = L.head
+  head' = \case
+    [] -> error "head': empty list"
+    (x : _) -> x
 
 instance (Ord a) => Headable Set a where
   head' = minimum . un
@@ -686,7 +698,9 @@ class Tailable f a where
   tail' :: f a -> f a
 
 instance Tailable [] a where
-  tail' = L.tail
+  tail' = \case
+    [] -> error "tail': empty list"
+    (_ : xs) -> xs
 
 instance (Ord a) => Tailable Set a where
   tail' s = S.delete (head' s) s
@@ -706,7 +720,7 @@ class Consable f a where
 instance Consable [] a where
   cons' = (:)
 
-splitAt :: (Integral n, Takeable n f a, Droppable n f a) => n -> f a -> (f a, f a)
+splitAt :: (Takeable n f a, Droppable n f a) => n -> f a -> (f a, f a)
 splitAt n f = (take n f, drop n f)
 
 halve :: forall n f a. (Sizable (f a), Integral n, Takeable n f a, Droppable n f a) => f a -> (f a, f a)

@@ -70,7 +70,7 @@ type family Not (a :: Bool) where
 
 type family a :==: b where
   a :==: a = 'True
-  a :==: b = 'False
+  _ :==: _ = 'False
 
 type a :/=: b = Not (a :==: b)
 
@@ -78,7 +78,7 @@ type Even n = If ((n `TN.Mod` 2) :==: 0) (N n) ('Text "Expected an even number")
 
 type Odd n = If ((n `TN.Mod` 2) :==: 1) (N n) ('Text "Expected an even number")
 
-type Without without n = If (Not (n :==: without)) n ('Text "Expected any except " :<>: TL.ShowType without)
+type Without without n = If (Not (n :==: without)) n ('Text "Expected any except " ':<>: 'TL.ShowType without)
 
 {-
 a :: Even 4

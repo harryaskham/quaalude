@@ -77,8 +77,6 @@ class Inf a where
   ꝏ :: a
   ꝏ = infinity
 
-pattern Ꝏ <- infinity
-
 -- Functional
 
 bottom :: a
@@ -164,7 +162,7 @@ infixr 9 <>∘
 
 infixl 0 <>!
 
-(<>?) :: (Monoid a) => [Maybe a] -> [a]
+(<>?) :: [Maybe a] -> [a]
 (<>?) = catMaybes
 
 infixl 0 <>?

@@ -79,13 +79,13 @@ gridModify f c g = runIdentity $ gridModifyM f c g
 (||~) :: (Griddable Identity g k a) => g k a -> (k, a -> a) -> g k a
 g ||~ (c, f) = gridModify f c g
 
-maxXY :: (Griddable Identity g k a, Coord k) => g k a -> k
+maxXY :: (Griddable Identity g k a) => g k a -> k
 maxXY = runIdentity . maxXYM
 
-minXY :: (Griddable Identity g k a, Coord k) => g k a -> k
+minXY :: (Griddable Identity g k a) => g k a -> k
 minXY = runIdentity . minXYM
 
-gridDims :: (Griddable Identity g k a, Coord k) => g k a -> k
+gridDims :: (Griddable Identity g k a) => g k a -> k
 gridDims = runIdentity . gridDimsM
 
 gridFind :: (Griddable Identity g k a) => a -> g k a -> [k]
@@ -530,8 +530,7 @@ instance SymbolList "" '[] where
   symbolList = []
 
 instance
-  ( KnownSymbol cs,
-    SymbolList cs l,
+  ( SymbolList cs l,
     ConsSymbol c cs ~ css,
     KnownChar c
   ) =>
@@ -548,8 +547,8 @@ type family SymbolToList (s :: Symbol) :: [Char] where
   SymbolToList s = SymbolToListM (UnconsSymbol s)
 
 type family SymbolToListM (s :: Maybe (Char, Symbol)) :: [Char] where
-  SymbolToListM (Just '(c, s)) = c ': SymbolToList s
-  SymbolToListM Nothing = '[]
+  SymbolToListM ('Just '(c, s)) = c ': SymbolToList s
+  SymbolToListM 'Nothing = '[]
 
 type family SChars cs where
   SChars '[] = '[]
@@ -574,8 +573,7 @@ instance (KnownChar c, cs ~ ConsSymbol c "") => IsLabel cs (SChar c) where
 
 (□) ::
   forall {c} {cs}.
-  ( IsLabel (ConsSymbol c "") (SChar c),
-    SChar c :< SymSChars cs,
+  ( SChar c :< SymSChars cs,
     KnownChar c
   ) =>
   SChar c ->
@@ -640,7 +638,7 @@ instance
   emptyCell (Cell v) =
     case popVariant v of
       Left v' -> emptyCell (Cell @cs v')
-      Right (sc :: SChar c) -> emptyCell @Char (charVal (Proxy @c))
+      Right (_ :: SChar c) -> emptyCell @Char (charVal (Proxy @c))
 
 instance GridCell Char where
   fromChar = id
@@ -723,25 +721,25 @@ instance (Functor m, Griddable m g Coord2 a) => IterGrid m g Coord2 Dir2 a where
   iterGridM' DirRight g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | y <- [0 .. my]] | x <- [0 .. mx]]
   iterGridM' DirUp g = do (mx, my) <- maxXYM g; fmap mconcat . mapM sequence $ [[((x, y),) <$> g <||!> (x, y) | x <- [mx, mx - 1 .. 0]] | y <- [my, my - 1 .. 0]]
 
-iterGridM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => g k a -> m [(k, a)]
+iterGridM :: forall {m} {g} {k} d {a}. (IterGrid m g k d a, Default d) => g k a -> m [(k, a)]
 iterGridM = iterGridM' (def @d)
 
-iterCoordsM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => g k a -> m [k]
+iterCoordsM :: forall {m} {g} {k} d {a}. (IterGrid m g k d a, Default d) => g k a -> m [k]
 iterCoordsM = iterCoordsM' (def @d)
 
-iterCellsM :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a, Default d) => g k a -> m [a]
+iterCellsM :: forall {m} {g} {k} d {a}. (IterGrid m g k d a, Default d) => g k a -> m [a]
 iterCellsM = iterCellsM' (def @d)
 
-iterGrid' :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a) => d -> g k a -> [(k, a)]
+iterGrid' :: forall {g} {k} d {a}. (IterGrid Identity g k d a) => d -> g k a -> [(k, a)]
 iterGrid' d = runIdentity . iterGridM' d
 
-iterGrid :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => g k a -> [(k, a)]
+iterGrid :: forall {g} {k} d {a}. (IterGrid Identity g k d a, Default d) => g k a -> [(k, a)]
 iterGrid = iterGrid' (def @d)
 
-iterCoords' :: forall {g} {k} d {a} {acc}. (IterGrid Identity g k d a) => d -> g k a -> [k]
+iterCoords' :: forall {g} {k} d {a}. (IterGrid Identity g k d a) => d -> g k a -> [k]
 iterCoords' d g = runIdentity $ iterCoordsM' d g
 
-iterCoords :: forall {m} {g} {k} d {a} {acc}. (IterGrid Identity g k d a, Default d) => g k a -> [k]
+iterCoords :: forall {g} {k} d {a}. (IterGrid Identity g k d a, Default d) => g k a -> [k]
 iterCoords = iterCoords' (def @d)
 
 foldGridM' :: forall {m} {g} {k} d {a} {acc}. (IterGrid m g k d a) => d -> (acc -> (k, a) -> m acc) -> acc -> g k a -> m acc
@@ -771,7 +769,7 @@ cropXM i j g = do
 cropX :: (Griddable Identity g k a) => Int -> Int -> g k a -> g k a
 cropX i j g = runIdentity $ cropXM i j g
 
-modifyCoordsM :: forall m g k a. (Griddable m g k a, Coord k) => (k -> k) -> g k a -> m (g k a)
+modifyCoordsM :: forall m g k a. (Griddable m g k a) => (k -> k) -> g k a -> m (g k a)
 modifyCoordsM f g = do
   (maxX, maxY) <- toXY @Int @k @k <$> maxXYM g
   let xO = (maxX + 1) `div` 2
@@ -793,10 +791,10 @@ variantsNubM g = nub <$> variantsM' g
 variantsNub :: (Griddable Identity g k a, Eq (g k a)) => g k a -> [g k a]
 variantsNub = runIdentity . variantsNubM
 
-rotations :: (Griddable Identity g k a, Eq (g k a)) => g k a -> [g k a]
+rotations :: (Griddable Identity g k a) => g k a -> [g k a]
 rotations = variants >>> pure >>> ([vId, r90, r180, r270] <*>)
 
-variantsM' :: forall m g k a. (Griddable m g k a, Coord k) => g k a -> m [g k a]
+variantsM' :: forall m g k a. (Griddable m g k a) => g k a -> m [g k a]
 variantsM' grid = do
   (maxX, _) <- toXY @Int @k @k <$> maxXYM grid
   let isEven = even (maxX + 1)
@@ -826,28 +824,28 @@ data Variants g k a = Variants
     v270 :: g k a
   }
 
-variantsM :: (Griddable m g k a, Coord k) => g k a -> m (Variants g k a)
+variantsM :: (Griddable m g k a) => g k a -> m (Variants g k a)
 variantsM grid = do
   vs <- variantsM' grid
   let [a, b, c, d, e, f, g, h, i, j, k, l] = vs
   return $ Variants a b c d e f g h i j k l
 
-variants :: (Griddable Identity g k a, Coord k) => g k a -> Variants g k a
+variants :: (Griddable Identity g k a) => g k a -> Variants g k a
 variants = runIdentity . variantsM
 
-gridLinesM :: forall k m g a. (Griddable m g k a, Coord k) => g k a -> m [[a]]
+gridLinesM :: forall k m g a. (Griddable m g k a) => g k a -> m [[a]]
 gridLinesM g = do
   (minX, minY) <- toXY @Int @k @k <$> minXYM g
   (maxX, maxY) <- toXY @Int @k @k <$> maxXYM g
   sequence [sequence [g <||!> fromXY @Int @k @k (x, y) | x <- [minX :: Int .. maxX]] | y <- [minY :: Int .. maxY]]
 
-gridLines :: (Griddable Identity g k a, Coord k) => g k a -> [[a]]
+gridLines :: (Griddable Identity g k a) => g k a -> [[a]]
 gridLines = runIdentity . gridLinesM
 
-prettyM :: (Griddable m g k a, Coord k) => g k a -> m Text
+prettyM :: (Griddable m g k a) => g k a -> m Text
 prettyM grid = unlines <$> (T.pack <$$> (toChar <$$$> gridLinesM grid))
 
-pretty :: (Griddable Identity g k a, Coord k) => g k a -> Text
+pretty :: (Griddable Identity g k a) => g k a -> Text
 pretty = runIdentity . prettyM
 
 convolve ::
@@ -993,10 +991,10 @@ instance (Semigroup a, Griddable m g k a, GridUnionable (MonoidalGrid m g k) a) 
 instance (Monoid a, Griddable m g k a, Semigroup (MonoidalGrid m g k a)) => Monoid (MonoidalGrid m g k a) where
   mempty = MonoidalGrid emptyGridM
 
-idMonoidalGridSconcat :: (Semigroup a, Semigroup (MonoidalGrid Identity g k a)) => g k a -> g k a -> g k a
+idMonoidalGridSconcat :: (Semigroup (MonoidalGrid Identity g k a)) => g k a -> g k a -> g k a
 idMonoidalGridSconcat a b = runIdentity . unMonoidalGrid $ MonoidalGrid (pure a) <> MonoidalGrid (pure b)
 
-idMonoidalGridMempty :: forall g k a. (Monoid a, Monoid (MonoidalGrid Identity g k a)) => g k a
+idMonoidalGridMempty :: forall g k a. (Monoid (MonoidalGrid Identity g k a)) => g k a
 idMonoidalGridMempty = runIdentity . unMonoidalGrid $ mempty @(MonoidalGrid Identity g k a)
 
 instance (Semigroup a, Semigroup (MonoidalGrid Identity Grid' k a)) => Semigroup (Grid' k a) where
@@ -1025,7 +1023,7 @@ instance (Griddable m g k a) => Griddable m (MonoidalGrid m g) k a where
   partitionCoordsM f g = both (MonoidalGrid . return) <$> (partitionCoordsM @m @g @k @a f =<< unMonoidalGrid g)
   gridMemberM k g = gridMemberM @m @g @k @a k =<< unMonoidalGrid g
 
-wildEq :: (Eq a, Eq k, GridCell a, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
+wildEq :: (Eq k, Griddable Identity g k a, GridUnionable (g k) a) => a -> g k a -> g k a -> Bool
 wildEq wild k g
   | gridDims k /= gridDims g = False
   | otherwise =
