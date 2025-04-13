@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
-{-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module Quaalude.Tracers where
 
@@ -8,6 +7,8 @@ import System.Console.ANSI
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Parsec
 import Text.ParserCombinators.Parsec
+import Debug.Trace qualified as Trace
+import Data.Text qualified as T
 
 pauseId :: a -> a
 pauseId a = unsafePerformIO $ do
@@ -59,3 +60,9 @@ traceAnim fps a b = unsafePerformIO do
   print a
   threadDelay (round uspf)
   return b
+
+traceStack :: Text -> a -> a
+traceStack msg a = Trace.traceStack (T.unpack msg) a
+
+traceStackId :: a -> a
+traceStackId = traceStack ""

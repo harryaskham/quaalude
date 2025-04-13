@@ -157,6 +157,7 @@ ghc-options:
   - -Wno-prepositive-qualified-module
   - -Wno-missing-role-annotations
   - -Wno-operator-whitespace
+  - -Wno-unused-do-bind
 
 library:
   source-dirs: src
