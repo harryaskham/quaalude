@@ -19,7 +19,10 @@ import Prelude hiding (Type)
 -- Build a function that runs all days, converts results to Text,
 -- and returns [(day, part, result)]
 runAllDays :: Q Exp
-runAllDays =
+runAllDays = runAllDays' 25
+
+runAllDays' :: (Integral n) => n -> Q Exp
+runAllDays' n =
   return . ListE $
     ( \(d, p) ->
         TupE
@@ -32,7 +35,7 @@ runAllDays =
               )
           ]
     )
-      <$> [(d, p) | d <- [1 .. 25], p <- [1, 2]]
+      <$> [(d, p) | d <- [1 .. fromIntegral n], p <- [1, 2]]
 
 -- Literal inputs; use TH to embed the input at compile time
 

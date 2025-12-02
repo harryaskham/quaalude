@@ -397,6 +397,11 @@ f <$@> a = uncurry f <$> a
 
 infixr 0 <$@>
 
+(<$$@>) :: (Functor f, Functor g) => (a -> b -> c) -> g (f (a, b)) -> g (f c)
+f <$$@> a = (fmap . fmap) (uncurry f) a
+
+infixr 0 <$$@>
+
 (=<<@) :: (Monad m) => (a -> b -> m c) -> m (a, b) -> m c
 f =<<@ a = uncurry f =<< a
 
@@ -494,8 +499,7 @@ instance {-# OVERLAPS #-} ToTup 0 [a] (HomTup 0 a) where
 
 instance
   {-# OVERLAPS #-}
-  ( HomTupCons a (HomTup (n - 1) a) (HomTup n a)
-  ) =>
+  (HomTupCons a (HomTup (n - 1) a) (HomTup n a)) =>
   ToTup n [a] (HomTup n a)
   where
   toTup (a : as) = homTupCons a (HomTup @(n - 1) as)

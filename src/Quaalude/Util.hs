@@ -202,7 +202,7 @@ wordOf p = spaceTabs `surrounding` p
 wordsOf :: Parser a -> Parser [a]
 wordsOf p = many (wordOf p)
 
-numbers :: (Read a) => Parser [a]
+numbers :: (Read a, Num a) => Parser [a]
 numbers = many (try (optionMaybe nonnumber) *> try number <* try (optionMaybe nonnumber))
 
 nondigit :: Parser Char
@@ -545,12 +545,15 @@ eol = char '\n'
 whitespace :: Parser String
 whitespace = try . many1 $ char ' '
 
-number :: (Read a) => Parser a
+number :: (Read a, Num a) => Parser a
 number = do
-  nM <- readMaybe <$> try (many1 (oneOf "-0123456789."))
+  neg <- optionMaybe (char '-')
+  nM <- readMaybe <$> try (many1 (oneOf "0123456789."))
   case nM of
     Nothing -> fail "No parse in number"
-    Just n -> return n
+    Just n -> case neg of
+      Just _ -> return (negate n)
+      Nothing -> return n
 
 bitChar :: Parser Bool
 bitChar = (char '1' >> return True) <|> (char '0' >> return False)
@@ -642,11 +645,11 @@ triples :: (Unable t) => t a -> [(a, a, a)]
 triples as' =
   let as = un as'
    in [ (a, b, c)
-        | (i, a) <- zip [0 .. length as - 3] as,
-          (j, b) <- zip [0 .. length as - 2] as,
-          j > i,
-          (k, c) <- zip [0 .. length as - 1] as,
-          k > j
+      | (i, a) <- zip [0 .. length as - 3] as,
+        (j, b) <- zip [0 .. length as - 2] as,
+        j > i,
+        (k, c) <- zip [0 .. length as - 1] as,
+        k > j
       ]
 
 -- Early terminating search for n items in a thing
