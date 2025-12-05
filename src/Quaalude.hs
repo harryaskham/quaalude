@@ -35,6 +35,7 @@ import Control.Lens as X
 import Control.Monad.Memo as X hiding (isNothing)
 import Control.Monad.ST as X
 import Data.Aeson.GADT.TH as X
+import Data.Biapplicative as X
 import Data.Bits as X (Bits (bit, bitSize, bitSizeMaybe, complement, isSigned, popCount, rotate, shift, testBit, xor, (.&.), (.|.)))
 import Data.Default as X
 import Data.Distributive as X
@@ -79,7 +80,7 @@ import Quaalude.Tuple as X
 import Quaalude.Unary as X
 import Quaalude.Util as X hiding (count)
 import Quaalude.Variadic as X
-import Relude as X hiding (drop, filter, group, many, optional, splitAt, swap, take, (<|>))
+import Relude as X hiding (drop, filter, group, many, optional, splitAt, swap, take, (<<$>>), (<|>))
 import System.IO.Unsafe as X
 import Text.ParserCombinators.Parsec as X hiding (State)
 import Text.RawString.QQ as X

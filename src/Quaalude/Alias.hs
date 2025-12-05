@@ -190,3 +190,13 @@ infixl 0 #
 type k :|-> v = Map k v
 
 ixℤ i = ix (fromIntegral i)
+
+(🎜) :: (Ord a) => [a] -> [a]
+(🎜) = sort
+
+infixl 0 🎜
+
+(🎝) :: (Ord a) => [a] -> [a]
+(🎝) = sortOn Down
+
+infixl 0 🎝

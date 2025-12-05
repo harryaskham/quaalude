@@ -213,11 +213,20 @@ nondigit = noneOf "-0123456789."
 nonnumber :: Parser String
 nonnumber = many1 nondigit
 
-natRange :: (Read a, Num a) => Parser (a, a)
-natRange = toTuple2 <$> (natural `sepBy1` (char '-'))
+class ParseDispatch sym a where
+  p :: Parser a
 
-naturals :: (Read a, Num a) => Parser [a]
+instance (Read a) => ParseDispatch (Natural |-| Natural) (RangeOf a) where
+  p = natRange Incl
+
+natRange :: (Read a) => RangeSize -> Parser (RangeOf a)
+natRange rs = RangeOf rs . toTuple2 <$> (natural `sepBy1` (char '-'))
+
+naturals :: (Read a) => Parser [a]
 naturals = many (try (optionMaybe nonNatural) *> try natural <* try (optionMaybe nonNatural))
+
+nats :: (Read a) => Parser [a]
+nats = naturals
 
 nonNatDigit :: Parser Char
 nonNatDigit = noneOf "0123456789"
@@ -361,16 +370,6 @@ both f = bimap f f
 (<:>) = both
 
 infixl 5 <:>
-
-(<:<) :: (Bifunctor t) => t a c -> (c -> d) -> (a -> b) -> t b d
-(<:<) = OH.onBimapFirst
-
-infixl 5 <:<
-
-(>:>) :: (Bifunctor t) => t a c -> (a -> b) -> (c -> d) -> t b d
-(>:>) = OH.onBimapSecond
-
-infixl 5 >:>
 
 bothM :: (Bitraversable f, Monad m) => (a -> m b) -> f a a -> m (f b b)
 bothM f = bitraverse f f
@@ -579,6 +578,9 @@ number = do
       Just _ -> return (negate n)
       Nothing -> return n
 
+nat :: (Read a) => Parser a
+nat = natural
+
 natural :: (Read a) => Parser a
 natural = do
   nM <- readMaybe <$> try (many1 (oneOf "0123456789"))
@@ -736,14 +738,8 @@ unjust Nothing = error "unjust Nothing"
 range :: (Ord a, Enum a) => a -> a -> [a]
 range a b = [min a b .. max a b]
 
-inRange :: (Ord a) => (a, a) -> a -> Bool
-inRange (a, b) c = c >= a && c <= b
-
-data RangeSize = Incl | Excl
-
-rlen :: (Num a) => RangeSize -> (a, a) -> a
-rlen Incl (a, b) = b - a + 1
-rlen Excl (a, b) = b - a
+(-!) :: (Num a) => a -> a -> a
+(-!) = flip (-)
 
 -- Random helpers
 

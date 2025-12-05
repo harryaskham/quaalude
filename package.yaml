@@ -29,6 +29,7 @@ dependencies:
   - text
   - containers
   - unordered-containers
+  - bifunctors
   - mtl
   - bimap
   - mod

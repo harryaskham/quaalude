@@ -5,6 +5,7 @@ module Quaalude.Collection where
 
 import Control.Lens (element, (.~))
 import Data.Array qualified as A
+import Data.Biapplicative
 import Data.Bimap qualified as BM
 import Data.ByteString.Lazy as BL (ByteString)
 import Data.ByteString.Lazy.Char8 as CL8 (pack, unpack)
@@ -566,12 +567,12 @@ type MinQ = PQ.MinPQueue
 pattern NullQ :: PQ.MinPQueue k a
 pattern NullQ <- (nullQ -> True)
 
-pattern (:<!) :: Ord k => (k, a) -> PQ.MinPQueue k a -> PQ.MinPQueue k a
+pattern (:<!) :: (Ord k) => (k, a) -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 pattern ka :<! q <- (PQ.deleteFindMin -> (ka, q))
   where
     ka :<! q = q |. ka
 
-pattern (:<!!) :: Ord k => a -> PQ.MinPQueue k a -> PQ.MinPQueue k a
+pattern (:<!!) :: (Ord k) => a -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 pattern a :<!! q <- (first snd . PQ.deleteFindMin -> (a, q))
 
 (<!) :: (Ord k) => PQ.MinPQueue k a -> ((k, a), PQ.MinPQueue k a)
@@ -643,6 +644,9 @@ class Filterable f a where
 
 (|-?->) :: (Filterable f a) => f a -> (a -> Bool) -> f a
 (|-?->) = flip filter
+
+(<-?-|) :: (Filterable f a) => (a -> Bool) -> f a -> f a
+(<-?-|) = filter
 
 instance Filterable [] a where
   filter = L.filter
@@ -746,3 +750,63 @@ instance (Ord k) => Arbitrary (Map k) v where
 
 arb :: (Arbitrary f a) => f a -> a
 arb = arbitrary
+
+inRange :: (Ord a) => (a, a) -> a -> Bool
+inRange (a, b) c = c >= a && c <= b
+
+data RangeSize = Incl | Excl deriving (Show, Eq)
+
+rlen :: (Num a) => RangeSize -> (a, a) -> a
+rlen Incl (a, b) = b - a + 1
+rlen Excl (a, b) = b - a
+
+type a |-| b = RangeOf a
+
+data RangeOf2 a b = RangeOf RangeSize (a, b) deriving (Show, Eq)
+
+type RangeOf a = RangeOf2 a a
+
+instance Functor (RangeOf2 a) where
+  fmap f (RangeOf rs (a, b)) = RangeOf rs (fmap f (a, b))
+
+instance Bifunctor RangeOf2 where
+  bimap f g (RangeOf rs (a, b)) = RangeOf rs (bimap f g (a, b))
+
+instance Biapplicative RangeOf2 where
+  bipure a b = RangeOf Excl (bipure a b)
+  (RangeOf rs (f, g)) <<*>> (RangeOf rs0 (a, b)) = RangeOf rs0 ((f, g) <<*>> (a, b))
+
+instance (Ord a) => Ord (RangeOf a) where
+  compare (RangeOf _ (a1, b1)) (RangeOf _ (a2, b2)) = compare (a1, b1) (a2, b2)
+
+instance (Ord a) => Memberable a (RangeOf a) where
+  x ∈ (RangeOf Incl (a, b)) = x >= a && x <= b
+  x ∈ (RangeOf Excl (a, b)) = x >= a && x < b
+
+type family MagnitudeF a where
+  MagnitudeF [_] = Integer
+  MagnitudeF (a, a) = MagnitudeF (RangeOf a)
+  MagnitudeF (RangeOf a) = a
+  MagnitudeF a = MagnitudeF (RangeOf a)
+
+data MagnitudeOp a b
+
+type family (|.|) a b where
+  (|.|) a _ = MagnitudeF a
+
+class Magnitude a where
+  (|.|) :: a -> MagnitudeF a
+  default (|.|) :: (Sizable a, Integral (MagnitudeF a)) => a -> MagnitudeF a
+  (|.|) = size
+
+  magnitude :: a -> MagnitudeF a
+  default magnitude :: a -> MagnitudeF a
+  magnitude = (|.|)
+
+instance (Integral a) => Magnitude (RangeOf a) where
+  (|.|) (RangeOf rs ab) = rlen rs ab
+
+instance (Integral a) => Magnitude (a, a) where
+  (|.|) a = (|.|) (RangeOf Excl a)
+
+instance Magnitude [a]

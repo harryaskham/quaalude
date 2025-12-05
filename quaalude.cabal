@@ -119,6 +119,7 @@ library
     , barbies
     , base >=4.19.0.0
     , benchpress
+    , bifunctors
     , bimap
     , binary-search
     , bitwise

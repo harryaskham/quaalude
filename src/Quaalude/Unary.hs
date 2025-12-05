@@ -195,29 +195,128 @@ instance UnaryApply UnaryNot Bool Bool where
 
 -- Folding
 
-class ApplyData a b where
-  (!>) :: a -> b
+data FoldLeft
 
-data UnaryFold m a b = Ł (b -> a -> b) b (m a) | Ɍ (a -> b -> b) b (m a)
+data FoldRight
 
--- instance forall a b (f :: Type -> Type). (Foldable f) => UnaryApply (UnaryFold a b) (f a) b where
---   (˙) (Ł f b) = F.foldl' f b
---   (˙) (Ɍ f b) = F.foldr f b
+data InitAcc
 
-instance (Foldable m) => ApplyData (UnaryFold m a b) b where
-  (!>) (Ł f acc ma) = F.foldl' f acc ma
-  (!>) (Ɍ f acc ma) = F.foldr f acc ma
+data Init1
 
--- i.e. ((Ŀ f xs) !>)
-data UnaryFold1 m a = Ŀ (a -> a -> a) (m a) | Ṛ (a -> a -> a) (m a)
+type family FoldAccF init acc a where
+  FoldAccF InitAcc acc _ = acc
+  FoldAccF Init1 _ a = a
 
-instance (Foldable m) => ApplyData (UnaryFold1 m a) a where
-  (!>) (Ŀ f ma) = F.foldl1 f ma
-  (!>) (Ṛ f ma) = F.foldr1 f ma
+type family FoldAccFnF dir init acc a where
+  FoldAccFnF FoldLeft init acc a = (FoldAccF init acc a -> a -> FoldAccF init acc a)
+  FoldAccFnF FoldRight init acc a = (a -> FoldAccF init acc a -> FoldAccF init acc a)
 
--- instance forall (m :: Type -> Type) a. (Foldable m) => UnaryApply (UnaryFold1 m a) (m a) a where
---  (˙) (Ŀ f ma) = F.foldl1 f ma
---  (˙) (Ṛ f ma) = F.foldr1 f ma
+type family GetFoldableF m a where
+  GetFoldableF m a = m a
+
+type family FoldFnF dir init m acc a where
+  FoldFnF dir init m acc a = FoldAccFnF dir init acc a -> FoldAccF init acc a -> GetFoldableF m a -> FoldAccF init acc a
+
+data UnaryFold dir init (m :: Type -> Type) acc a
+  = UnaryFold (FoldAccFnF dir init acc a) (FoldAccF init acc a) (GetFoldableF m a)
+
+data family Fold dir init (m :: Type -> Type) acc a
+
+data instance Fold FoldLeft InitAcc m acc a = Ł (FoldAccFnF FoldLeft InitAcc acc a) (FoldAccF InitAcc acc a) (GetFoldableF m a)
+
+data instance Fold FoldRight InitAcc m acc a = Ɍ (FoldAccFnF FoldRight InitAcc acc a) (FoldAccF InitAcc acc a) (GetFoldableF m a)
+
+data instance Fold FoldLeft Init1 m acc a = Ŀ (FoldAccFnF FoldLeft Init1 acc a) (GetFoldableF m a)
+
+data instance Fold FoldRight Init1 m acc a = Ṛ (FoldAccFnF FoldRight Init1 acc a) (GetFoldableF m a)
+
+type family FoldAccDF f where
+  FoldAccDF (Fold dir init m acc a) = FoldAccF init acc a
+
+type family FoldAccFnDF f where
+  FoldAccFnDF (Fold dir init m acc a) = FoldAccFnF dir init acc a
+
+type family GetFoldableDF f where
+  GetFoldableDF (Fold dir init m acc a) = GetFoldableF m a
+
+type family FoldFnDF f where
+  FoldFnDF (Fold dir init m acc a) = FoldFnF dir init m acc a
+
+class FoldAccFn f where
+  foldAccFn :: f -> FoldAccFnDF f
+
+instance FoldAccFn (Fold FoldLeft InitAcc m acc a) where
+  foldAccFn (Ł f _ _) = f
+
+instance FoldAccFn (Fold FoldRight InitAcc m acc a) where
+  foldAccFn (Ɍ f _ _) = f
+
+instance FoldAccFn (Fold FoldLeft Init1 m acc a) where
+  foldAccFn (Ŀ f _) = f
+
+instance FoldAccFn (Fold FoldRight Init1 m acc a) where
+  foldAccFn (Ṛ f _) = f
+
+class FoldAcc f where
+  foldAcc :: f -> FoldAccDF f
+
+instance FoldAcc (Fold FoldLeft InitAcc m acc a) where
+  foldAcc (Ł _ acc _) = acc
+
+instance FoldAcc (Fold FoldRight InitAcc m acc a) where
+  foldAcc (Ɍ _ acc _) = acc
+
+instance (Foldable m) => FoldAcc (Fold FoldLeft Init1 m acc a) where
+  foldAcc (Ŀ _ xs) = let (x : _) = F.toList xs in x
+
+instance (Foldable m) => FoldAcc (Fold FoldRight Init1 m acc a) where
+  foldAcc (Ṛ _ xs) = let (x : _) = F.toList xs in x
+
+class GetFoldable f where
+  getFoldable :: f -> GetFoldableDF f
+
+instance GetFoldable (Fold FoldLeft InitAcc m acc a) where
+  getFoldable (Ł _ _ xs) = xs
+
+instance GetFoldable (Fold FoldRight InitAcc m acc a) where
+  getFoldable (Ɍ _ _ xs) = xs
+
+instance (Foldable m) => GetFoldable (Fold FoldLeft Init1 m acc a) where
+  getFoldable (Ŀ _ xs) = xs
+
+instance (Foldable m) => GetFoldable (Fold FoldRight Init1 m acc a) where
+  getFoldable (Ṛ _ xs) = xs
+
+class FoldFn f where
+  foldFn :: f -> FoldFnDF f
+
+instance (Foldable m) => FoldFn (Fold FoldLeft InitAcc m acc a) where
+  foldFn _ = F.foldl'
+
+instance (Foldable m) => FoldFn (Fold FoldRight InitAcc m acc a) where
+  foldFn _ = F.foldr
+
+instance (Foldable m) => FoldFn (Fold FoldLeft Init1 m acc a) where
+  foldFn _ f _ xs = F.foldl1 f xs
+
+instance (Foldable m) => FoldFn (Fold FoldRight Init1 m acc a) where
+  foldFn _ f _ xs = F.foldr1 f xs
+
+class ApplyFold f where
+  (!>) :: f -> FoldAccDF f
+
+instance
+  ( FoldFnDF f ~ (FoldAccFnDF f -> FoldAccDF f -> GetFoldableDF f -> FoldAccDF f),
+    FoldFn f,
+    FoldAccFn f,
+    FoldAcc f,
+    GetFoldable f
+  ) =>
+  ApplyFold f
+  where
+  (!>) f =
+    let doFold :: FoldFnDF f = foldFn @f f
+     in doFold (foldAccFn @f f) (foldAcc @f f) (getFoldable @f f)
 
 -- Unary forcing
 
