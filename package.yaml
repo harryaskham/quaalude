@@ -66,6 +66,7 @@ dependencies:
   - HList
   - tagged
   - named
+  - overhang
 
 default-extensions:
   - OverloadedStrings

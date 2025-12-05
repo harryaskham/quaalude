@@ -28,6 +28,7 @@ import GHC.TypeLits
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Linear.V3 (R1 (_x), R2 (_y), R3 (_z), V3 (..))
+import Overhang qualified as OH
 import Quaalude.Alias
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
@@ -57,6 +58,7 @@ import Text.ParserCombinators.Parsec
     optionMaybe,
     parse,
     sepBy,
+    sepBy1,
     string,
     try,
   )
@@ -211,6 +213,18 @@ nondigit = noneOf "-0123456789."
 nonnumber :: Parser String
 nonnumber = many1 nondigit
 
+natRange :: (Read a, Num a) => Parser (a, a)
+natRange = toTuple2 <$> (natural `sepBy1` (char '-'))
+
+naturals :: (Read a, Num a) => Parser [a]
+naturals = many (try (optionMaybe nonNatural) *> try natural <* try (optionMaybe nonNatural))
+
+nonNatDigit :: Parser Char
+nonNatDigit = noneOf "0123456789"
+
+nonNatural :: Parser String
+nonNatural = many1 nonNatDigit
+
 nat₁₀ :: Parser ℕ₁₀
 nat₁₀ = do
   c <- digit
@@ -347,6 +361,16 @@ both f = bimap f f
 (<:>) = both
 
 infixl 5 <:>
+
+(<:<) :: (Bifunctor t) => t a c -> (c -> d) -> (a -> b) -> t b d
+(<:<) = OH.onBimapFirst
+
+infixl 5 <:<
+
+(>:>) :: (Bifunctor t) => t a c -> (a -> b) -> (c -> d) -> t b d
+(>:>) = OH.onBimapSecond
+
+infixl 5 >:>
 
 bothM :: (Bitraversable f, Monad m) => (a -> m b) -> f a a -> m (f b b)
 bothM f = bitraverse f f
@@ -555,6 +579,13 @@ number = do
       Just _ -> return (negate n)
       Nothing -> return n
 
+natural :: (Read a) => Parser a
+natural = do
+  nM <- readMaybe <$> try (many1 (oneOf "0123456789"))
+  case nM of
+    Nothing -> fail "No parse in natural"
+    Just n -> return n
+
 bitChar :: Parser Bool
 bitChar = (char '1' >> return True) <|> (char '0' >> return False)
 
@@ -704,6 +735,15 @@ unjust Nothing = error "unjust Nothing"
 -- rangeFromTo not caring about ordering
 range :: (Ord a, Enum a) => a -> a -> [a]
 range a b = [min a b .. max a b]
+
+inRange :: (Ord a) => (a, a) -> a -> Bool
+inRange (a, b) c = c >= a && c <= b
+
+data RangeSize = Incl | Excl
+
+rlen :: (Num a) => RangeSize -> (a, a) -> a
+rlen Incl (a, b) = b - a + 1
+rlen Excl (a, b) = b - a
 
 -- Random helpers
 

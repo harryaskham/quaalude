@@ -195,17 +195,29 @@ instance UnaryApply UnaryNot Bool Bool where
 
 -- Folding
 
-data UnaryFold a b = Ł (b -> a -> b) b | Ɍ (a -> b -> b) b
+class ApplyData a b where
+  (!>) :: a -> b
 
-instance forall a b (f :: Type -> Type). (Foldable f) => UnaryApply (UnaryFold a b) (f a) b where
-  (˙) (Ł f b) = F.foldl' f b
-  (˙) (Ɍ f b) = F.foldr f b
+data UnaryFold m a b = Ł (b -> a -> b) b (m a) | Ɍ (a -> b -> b) b (m a)
 
-data UnaryFold1 a = Ŀ (a -> a -> a) | Ṛ (a -> a -> a)
+-- instance forall a b (f :: Type -> Type). (Foldable f) => UnaryApply (UnaryFold a b) (f a) b where
+--   (˙) (Ł f b) = F.foldl' f b
+--   (˙) (Ɍ f b) = F.foldr f b
 
-instance forall a (f :: Type -> Type). (Foldable f) => UnaryApply (UnaryFold1 a) (f a) a where
-  (˙) (Ŀ f) = F.foldl1 f
-  (˙) (Ṛ f) = F.foldr1 f
+instance (Foldable m) => ApplyData (UnaryFold m a b) b where
+  (!>) (Ł f acc ma) = F.foldl' f acc ma
+  (!>) (Ɍ f acc ma) = F.foldr f acc ma
+
+-- i.e. ((Ŀ f xs) !>)
+data UnaryFold1 m a = Ŀ (a -> a -> a) (m a) | Ṛ (a -> a -> a) (m a)
+
+instance (Foldable m) => ApplyData (UnaryFold1 m a) a where
+  (!>) (Ŀ f ma) = F.foldl1 f ma
+  (!>) (Ṛ f ma) = F.foldr1 f ma
+
+-- instance forall (m :: Type -> Type) a. (Foldable m) => UnaryApply (UnaryFold1 m a) (m a) a where
+--  (˙) (Ŀ f ma) = F.foldl1 f ma
+--  (˙) (Ṛ f ma) = F.foldr1 f ma
 
 -- Unary forcing
 

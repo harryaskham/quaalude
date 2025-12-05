@@ -181,7 +181,7 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   (<||∉>) :: k -> g k a -> m Bool
   a <||∉> g = not <$> (a <||∈> g)
 
-newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord)
+newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord, Functor)
 
 deriving via PrettyGrid (Grid' k a) instance (Griddable Identity Grid' k a) => Show (Grid' k a)
 
@@ -418,7 +418,7 @@ instance (GridCell a) => Griddable (ST s) (STVectorGrid' s) Coord2 a where
     let maxY = STV.length g - 1
     sequence
       [ ((x, y),) <$> ((g `STV.read` y) >>= (`STV.read` x))
-        | (x, y) <- [(x, y) | y <- [0 .. maxY], x <- [0 .. maxX]]
+      | (x, y) <- [(x, y) | y <- [0 .. maxY], x <- [0 .. maxX]]
       ]
   gridGetMaybeM c@(x, y) (STVectorGrid g) = do
     maxX <- STV.length <$> STV.read g 0
@@ -460,7 +460,7 @@ instance (GridCell a) => Griddable IO IOVectorGrid' Coord2 a where
     let maxY = STV.length g - 1
     sequence
       [ ((x, y),) <$> ((g `STV.read` y) >>= (`STV.read` x))
-        | (x, y) <- [(x, y) | y <- [0 .. maxY], x <- [0 .. maxX]]
+      | (x, y) <- [(x, y) | y <- [0 .. maxY], x <- [0 .. maxX]]
       ]
   gridGetMaybeM c@(x, y) (IOVectorGrid g) = do
     maxX <- STV.length <$> STV.read g 0
@@ -693,8 +693,8 @@ toGridM :: forall m g k a. (Griddable m g k a) => [Text] -> m (g k a)
 toGridM rows =
   mkGridM
     [ (fromXY @Int @k @k (x, y), fromChar c)
-      | (y, row) <- zip [0 ..] rows,
-        (x, c) <- zip [0 ..] (T.unpack row)
+    | (y, row) <- zip [0 ..] rows,
+      (x, c) <- zip [0 ..] (T.unpack row)
     ]
 
 toGrid :: (Griddable Identity g k a) => [Text] -> g k a
@@ -859,10 +859,10 @@ convolve ::
 convolve (u, d, l, r) f g =
   mkGrid
     [ (c, f g')
-      | c@(x', y') <- coords g,
-        let g' =
-              mapCoords (\(x, y) -> (x - x', y - y')) $
-                filterCoords (\(x, y) -> x >= x' - l && y >= y' - u && x < x' + r && y < y' + d) g
+    | c@(x', y') <- coords g,
+      let g' =
+            mapCoords (\(x, y) -> (x - x', y - y')) $
+              filterCoords (\(x, y) -> x >= x' - l && y >= y' - u && x < x' + r && y < y' + d) g
     ]
 
 convolveWith ::
