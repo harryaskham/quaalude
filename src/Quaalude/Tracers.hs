@@ -3,12 +3,12 @@
 module Quaalude.Tracers where
 
 import Control.Concurrent
+import Data.Text qualified as T
+import Debug.Trace qualified as Trace
 import System.Console.ANSI
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Parsec
 import Text.ParserCombinators.Parsec
-import Debug.Trace qualified as Trace
-import Data.Text qualified as T
 
 pauseId :: a -> a
 pauseId a = unsafePerformIO $ do
@@ -21,9 +21,21 @@ traceStrLn s a = unsafePerformIO $ do
   putStrLn ""
   return a
 
+traceStrLnId :: (Show a) => a -> a
+traceStrLnId a = unsafePerformIO $ do
+  putStrLn (show a)
+  putStrLn ""
+  return a
+
 traceTextLn :: Text -> a -> a
 traceTextLn s a = unsafePerformIO $ do
   putTextLn s
+  putTextLn ""
+  return a
+
+traceTextLnId :: (Show a) => a -> a
+traceTextLnId a = unsafePerformIO $ do
+  putTextLn (show a)
   putTextLn ""
   return a
 

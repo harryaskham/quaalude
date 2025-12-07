@@ -37,6 +37,10 @@ import Control.Monad.ST as X
 import Data.Aeson.GADT.TH as X
 import Data.Biapplicative as X
 import Data.Bits as X (Bits (bit, bitSize, bitSizeMaybe, complement, isSigned, popCount, rotate, shift, testBit, xor, (.&.), (.|.)))
+-- WIP; import manually
+-- import Quaalude.Type as X
+
+import Data.Char as X (isDigit)
 import Data.Default as X
 import Data.Distributive as X
 import Data.Either as X
@@ -47,9 +51,6 @@ import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, 
 import Data.PQueue.Prio.Min (deleteFindMin)
 import Data.Ratio as X
 import Data.Sequence (Seq (..))
--- WIP; import manually
--- import Quaalude.Type as X
-
 import Data.Text as X (stripPrefix)
 import Data.Tuple.Extra as X (fst3, snd3, thd3)
 import Data.Tuple.Solo as X

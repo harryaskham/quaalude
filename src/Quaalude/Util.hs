@@ -204,6 +204,9 @@ wordOf p = spaceTabs `surrounding` p
 wordsOf :: Parser a -> Parser [a]
 wordsOf p = many (wordOf p)
 
+nums :: (Read a, Num a) => Parser [a]
+nums = numbers
+
 numbers :: (Read a, Num a) => Parser [a]
 numbers = many (try (optionMaybe nonnumber) *> try number <* try (optionMaybe nonnumber))
 
@@ -213,17 +216,219 @@ nondigit = noneOf "-0123456789."
 nonnumber :: Parser String
 nonnumber = many1 nondigit
 
-class ParseDispatch sym a where
-  p :: Parser a
+-- Discard until a is parsed, does not consume beyond
+oneInLineDiscarding :: Parser a -> Parser a
+oneInLineDiscarding p = do
+  aM <- optionMaybe (try p)
+  cM <- lookAhead (try (optionMaybe (noneOf "\n")))
+  case (aM, cM) of
+    (Nothing, Nothing) -> fail "oneInLineDiscarding: no parse, no continuation"
+    (Nothing, Just _) -> anyChar >> oneInLineDiscarding p
+    (Just a, _) -> return a
 
-instance (Read a) => ParseDispatch (Natural |-| Natural) (RangeOf a) where
-  p = natRange Incl
+-- Discard until a is parsed, does not consume beyond
+oneDiscarding :: Parser a -> Parser a
+oneDiscarding p = do
+  aM <- optionMaybe (try p)
+  cM <- lookAhead (try (optionMaybe anyChar))
+  case (aM, cM) of
+    (Nothing, Nothing) -> fail "oneDiscarding: no parse, no continuation"
+    (Nothing, Just _) -> anyChar >> oneDiscarding p
+    (Just a, _) -> return a
+
+-- Take all a in the line, do not consume the eol
+manyInLineDiscarding :: Parser a -> Parser [a]
+manyInLineDiscarding p =
+  let go = do
+        aM <- optionMaybe (try p)
+        cM <- lookAhead (try (optionMaybe (noneOf "\n")))
+        case (aM, cM) of
+          (Nothing, Nothing) -> return []
+          (Nothing, Just _) -> (try (noneOf "\n" >> go)) <|> pure []
+          (Just a, Nothing) -> return [a]
+          (Just a, Just _) -> (a :) <$> ((try (noneOf "\n" >> go)) <|> pure [])
+   in do
+        xsM <- optionMaybe (try go)
+        case xsM of
+          Nothing -> fail "manyInLineDiscarding: no parse"
+          Just [] -> fail "manyInLineDiscarding: no items"
+          Just xs -> pure xs
+
+data PairSep (sep :: Symbol) a b = PairSep a b
+
+data SepByMany (sep :: Symbol) a = SepByMany a
+
+data ℕw = ℕw String ℕ deriving (Eq, Ord, Show)
+
+unℕw :: ℕw -> String
+unℕw (ℕw s _) = s
+
+data ℕc = ℕc (Maybe Char) deriving (Eq, Ord, Show)
+
+unℕc :: ℕc -> Maybe Char
+unℕc (ℕc c) = c
+
+type family CanonicalParseF a where
+  CanonicalParseF [a] = [CanonicalParseF a]
+  CanonicalParseF (NonEmpty a) = (NonEmpty (CanonicalParseF a))
+  CanonicalParseF (SepByMany _ a) = [CanonicalParseF a]
+  CanonicalParseF (a, b) = (CanonicalParseF a, CanonicalParseF b)
+  CanonicalParseF (PairSep _ a b) = (CanonicalParseF a, CanonicalParseF b)
+  CanonicalParseF a = a
+
+class CanonicalParse a where
+  parseCanonical :: Parser (CanonicalParseF a)
+
+instance CanonicalParse Char where
+  parseCanonical = noneOf "\n"
+
+instance CanonicalParse String where
+  parseCanonical = many (noneOf "\n")
+
+instance CanonicalParse () where
+  parseCanonical = pure ()
+
+instance CanonicalParse Integer where
+  parseCanonical = number
+
+instance CanonicalParse Natural where
+  parseCanonical = natural
+
+instance CanonicalParse ℕw where
+  parseCanonical = do
+    n <- many1 (oneOf "0123456789")
+    pure $ ℕw n (U.read n)
+
+instance CanonicalParse ℕc where
+  parseCanonical = do
+    c <- (Just <$> (try (oneOf "0123456789"))) <|> pure Nothing
+    pure $ ℕc c
+
+instance CanonicalParse (Integer -> Integer -> Integer) where
+  parseCanonical = mathOp
+
+instance CanonicalParse (Natural -> Natural -> Natural) where
+  parseCanonical = mathOp
+
+instance (Read a) => CanonicalParse (RangeOf a) where
+  parseCanonical = natRange Incl
+
+instance (CanonicalParse a, KnownSymbol sep) => CanonicalParse (SepByMany sep a) where
+  parseCanonical =
+    do
+      let seps = many1 (oneOf (symbolVal (Proxy @sep)))
+      many1 ((try (optionMaybe seps) *> try (parseCanonical @a) <* try (optionMaybe seps)))
+
+instance (CanonicalParse a, CanonicalParse b, KnownSymbol sep) => CanonicalParse (PairSep sep a b) where
+  parseCanonical = do
+    a <- parseCanonical @a <* string (symbolVal (Proxy @sep))
+    b <- parseCanonical @b
+    return (a, b)
+
+instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
+  parseCanonical = do
+    xs <- many1 (try (parseCanonical @a) <* eol)
+    case nonEmpty xs of
+      Nothing -> fail "Expected non-empty list"
+      Just ne -> return ne
+
+instance {-# OVERLAPS #-} (CanonicalParse a) => CanonicalParse [[a]] where
+  parseCanonical = many1 (parseCanonical @[a])
+
+instance {-# OVERLAPS #-} (CanonicalParse a) => CanonicalParse [a] where
+  parseCanonical = parseCanonical @(SepByMany " " a) <* manyTill anyChar eol
+
+instance (CanonicalParse a, CanonicalParse b) => CanonicalParse (a, b) where
+  parseCanonical = try ((,) <$> parseCanonical @a <*> parseCanonical @b)
+
+-- parseCanonical = ((,) <$> (oneDiscarding (parseCanonical @a)) <*> (oneDiscarding (parseCanonical @b)))
+-- parseCanonical = parseCanonical @(PairSep "\n" a b)
+
+(⋯) ::
+  forall {a}.
+  ( CanonicalParse a,
+    CanonicalParseF a ~ a
+  ) =>
+  String -> a
+(⋯) = (|- parseCanonical @a)
+
+(⋮) ::
+  forall {a} {f} {x}.
+  ( a ~ f x,
+    CanonicalParse (f x),
+    CanonicalParseF (f x) ~ (f x)
+  ) =>
+  String -> a
+(⋮) = (|- parseCanonical @(f x))
+
+(⋮×⋯) ::
+  forall {a} {f} {g} {l} {r}.
+  ( a ~ (f l, g r),
+    CanonicalParse (f l),
+    CanonicalParse (g r),
+    CanonicalParseF (f l) ~ f l,
+    CanonicalParseF (g r) ~ g r
+  ) =>
+  String -> a
+(⋮×⋯) = (|- parseCanonical @(f l, g r))
+
+(⋮↵⋯) ::
+  forall {a} {f} {g} {l} {r}.
+  ( a ~ (f l, g r),
+    CanonicalParse (f l),
+    CanonicalParse (g r),
+    CanonicalParseF (f l) ~ f l,
+    CanonicalParseF (g r) ~ g r
+  ) =>
+  String -> a
+(⋮↵⋯) = (|- parseCanonical @(PairSep "\n" (f l) (g r)))
+
+(⋮×⋮) ::
+  forall {a} {l} {r}.
+  ( a ~ (l, r),
+    CanonicalParse l,
+    CanonicalParse r,
+    CanonicalParseF l ~ l,
+    CanonicalParseF r ~ r
+  ) =>
+  String -> a
+(⋮×⋮) = (|- parseCanonical @(l, r))
+
+(⋮↵⋮) ::
+  forall {a} {l} {r}.
+  ( a ~ (l, r),
+    CanonicalParse l,
+    CanonicalParse r,
+    CanonicalParseF l ~ l,
+    CanonicalParseF r ~ r
+  ) =>
+  String -> a
+(⋮↵⋮) = (|- parseCanonical @(PairSep "\n" l r))
 
 natRange :: (Read a) => RangeSize -> Parser (RangeOf a)
 natRange rs = RangeOf rs . toTuple2 <$> (natural `sepBy1` (char '-'))
 
 naturals :: (Read a) => Parser [a]
 naturals = many (try (optionMaybe nonNatural) *> try natural <* try (optionMaybe nonNatural))
+
+mathOpChars :: String
+mathOpChars = "+-*/"
+
+mathOp :: (Integral a) => Parser (a -> a -> a)
+mathOp = do
+  op <- try (oneOf mathOpChars)
+  case op of
+    '+' -> return (+)
+    '-' -> return (-)
+    '*' -> return (*)
+    '/' -> return div
+    _ -> fail "Unknown operation"
+
+nonMathOpChar :: Parser Char
+nonMathOpChar = noneOf mathOpChars
+
+nonMathOp :: Parser String
+nonMathOp = many1 (try nonMathOpChar)
 
 nats :: (Read a) => Parser [a]
 nats = naturals
@@ -232,7 +437,7 @@ nonNatDigit :: Parser Char
 nonNatDigit = noneOf "0123456789"
 
 nonNatural :: Parser String
-nonNatural = many1 nonNatDigit
+nonNatural = many1 (try nonNatDigit)
 
 nat₁₀ :: Parser ℕ₁₀
 nat₁₀ = do
@@ -871,3 +1076,32 @@ instance Default Char where
 
 pad :: Int -> c -> [c] -> [c]
 pad l c x = replicate (l - length x) c ++ x
+
+-- | Split list by groups of one or more sep.
+splitBy :: (a -> Bool) -> [a] -> [[a]]
+splitBy _ [] = []
+splitBy isSep lst =
+  let (first, rest) = break isSep lst
+   in first : splitBy isSep (dropWhile isSep rest)
+
+pcases :: a -> [(a -> Bool, b)] -> b
+pcases a ((p, b) : cs)
+  | p a = b
+  | otherwise = pcases a cs
+
+cases :: (Eq a) => a -> [(a, b)] -> b
+cases a ((a', b) : cs)
+  | a == a' = b
+  | otherwise = cases a cs
+
+a ?> cs = pcases a cs
+
+infixr 1 ?>
+
+a ==?> cs = cases a cs
+
+infixr 1 ==?>
+
+a ->> c = (a, c)
+
+infixr 1 ->>

@@ -3,6 +3,7 @@
 
 module Quaalude.Grid where
 
+import Control.Lens (iat, ix, (%~), (&), (.~), (^.), (^..), (^?), _Just)
 import Control.Monad
 import Control.Monad.Memo.Vector (Vector)
 import Control.Monad.ST (ST, runST)
@@ -18,7 +19,8 @@ import Data.Fin (Fin)
 import Data.HashMap.Strict qualified as HM
 import Data.IntMap.Strict qualified as IM
 import Data.List (groupBy)
-import Data.List.Extra (groupOn)
+import Data.List qualified as L
+import Data.List.Extra (groupOn, maximumOn)
 import Data.Map.Strict qualified as M
 import Data.Text qualified as T
 import Data.Variant
@@ -31,11 +33,12 @@ import Quaalude.Collection
 import Quaalude.Coord
 import Quaalude.Tracers
 import Quaalude.Unary
-import Quaalude.Util (both, bothM, unjust, (.<.), (<$$$>), (<$$>))
+import Quaalude.Util (CanonicalParse (..), CanonicalParseF, both, bothM, enum, enumerate, unjust, (.<.), (<$$$>), (<$$>))
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
+import Text.ParserCombinators.Parsec (Parser, anyChar, eof, manyTill)
 import Text.Show qualified as TS
-import Prelude hiding (filter)
+import Prelude hiding (filter, swap)
 
 emptyGrid :: (Griddable Identity g k a) => g k a
 emptyGrid = runIdentity emptyGridM
@@ -180,6 +183,61 @@ class (Monad m, Coord k, GridCell a) => Griddable m g k a where
   a <||∈> g = gridMemberM a g
   (<||∉>) :: k -> g k a -> m Bool
   a <||∉> g = not <$> (a <||∈> g)
+
+newtype ListGrid' k a = ListGrid {unListGrid :: [[a]]} deriving (Eq, Ord, Functor)
+
+instance Memberable Coord2 (ListGrid' Coord2 a) where
+  (x, y) ∈ ListGrid g = y < length g && x < length (g L.!! y)
+
+instance Ixable Coord2 (ListGrid' Coord2) where
+  ListGrid g !! (x, y) = g L.!! y L.!! x
+  ListGrid g !? (x, y) = (g ^? ix y) >>= (^? ix x)
+  ListGrid g !. ((x, y), a) = ListGrid $ g & ix y . ix x .~ a
+
+instance Gettable ListGrid' Coord2 a
+
+instance Settable ListGrid' Coord2 a
+
+instance Modifiable ListGrid' Coord2 a
+
+instance MaybeGettable ListGrid' Coord2 a
+
+instance (Eq a) => ValueGettable (ListGrid' Coord2 a) Coord2 a where
+  ListGrid g |?> a = [(x, y) | (y, row) <- enum g, (x, a') <- enum row, a == a']
+
+instance Keysable (ListGrid' Coord2 a) Coord2 where
+  keys g = fst <$> items g
+
+instance Valuesable ListGrid' Coord2 a where
+  values g = snd <$> items g
+
+instance Itemsable ListGrid' Coord2 a where
+  items (ListGrid g) = [((x, y), a) | (y, row) <- enum g, (x, a) <- enum row]
+
+type ListGrid a = ListGrid' Coord2 a
+
+instance (Griddable m Grid' Coord2 a) => Griddable m ListGrid' Coord2 a where
+  mkGridM cs =
+    let w = maximum (fst . fst <$> cs)
+        h = maximum (snd . fst <$> cs)
+        m = mkMap <$> mkMapWith (<>) [(y, [(x, a)]) | ((x, y), a) <- cs]
+     in pure $ ListGrid [[m |! y |! x | x <- [0 .. w]] | y <- [0 .. h]]
+  unGridM = pure . items
+  gridGetMaybeM c g = pure $ g |? c
+  gridGetM c g = pure $ g |! c
+  gridSetM a c g = pure $ g |. (c, a)
+  gridModifyM f c g = pure $ g |~ (c, f)
+  maxXYM (ListGrid g) = pure (maximum (length <$> g), length g)
+  minXYM (ListGrid g) = pure (0, 0)
+  mapCoordsM f g = unGridM g >>= mkGridM @m @Grid' >>= mapCoordsM f >>= unGridM @m @Grid' >>= mkGridM
+  filterCoordsM f g = unGridM g >>= mkGridM @m @Grid' >>= filterCoordsM f >>= unGridM @m @Grid' >>= mkGridM
+  partitionCoordsM f g = do
+    gG <- mkGridM @m @Grid' =<< unGridM g
+    (a, b) <- partitionCoordsM f gG
+    aL <- mkGridM =<< unGridM @m @Grid' a
+    bL <- mkGridM =<< unGridM @m @Grid' b
+    return (aL, bL)
+  gridMemberM c g = pure $ c ∈ g
 
 newtype Grid' k a = Grid (Map k a) deriving (Eq, Ord, Functor)
 
@@ -560,6 +618,12 @@ type CharV s = V (SymSChars s)
 
 newtype Cell (cs :: Symbol) = Cell {unCell :: CharV cs}
 
+instance
+  (GridCell (Cell cs)) =>
+  Convable (Cell cs) Char
+  where
+  co = toChar @(Cell cs)
+
 mkC ::
   forall {cs} c.
   ( SChar c :< SymSChars cs,
@@ -793,6 +857,21 @@ variantsNub = runIdentity . variantsNubM
 
 rotations :: (Griddable Identity g k a) => g k a -> [g k a]
 rotations = variants >>> pure >>> ([vId, r90, r180, r270] <*>)
+
+instance (Griddable Identity g k a, k ~ p c c, Swappable p c c) => Transposable (g k a) where
+  (⊤) = runIdentity . mapCoordsM (swap @p @c @c)
+
+class Rotatable a where
+  (↺) :: a -> a
+  (↻) :: a -> a
+
+instance (Griddable Identity g k a) => Rotatable (g k a) where
+  (↺) = variants >>> r270
+  (↻) = variants >>> r90
+
+instance (Griddable Identity ListGrid' Coord2 a) => Rotatable [[a]] where
+  (↺) = unListGrid . (↺) @(ListGrid' Coord2 a) . ListGrid
+  (↻) = unListGrid . (↻) @(ListGrid' Coord2 a) . ListGrid
 
 variantsM' :: forall m g k a. (Griddable m g k a) => g k a -> m [g k a]
 variantsM' grid = do
@@ -1058,3 +1137,14 @@ instance (Swappable Map k a, Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) w
   co = swapcat . co @(Grid' k a) @(Map k a)
 
 type cs ▦ k = G k (Cell cs)
+
+gridParseCanonical :: (Griddable Identity g k a, CanonicalParseF (g k a) ~ g k a) => Parser (g k a)
+gridParseCanonical = do
+  s <- manyTill anyChar eof
+  return $ readGrid (T.pack s)
+
+instance (Griddable Identity ListGrid' k a) => CanonicalParse (ListGrid' k a) where
+  parseCanonical = gridParseCanonical
+
+instance (Griddable Identity G k a) => CanonicalParse (G k a) where
+  parseCanonical = gridParseCanonical

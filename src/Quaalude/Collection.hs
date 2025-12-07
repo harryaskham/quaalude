@@ -16,6 +16,7 @@ import Data.HashMap.Strict qualified as HM
 import Data.IntMap.Strict qualified as IM
 import Data.List qualified as L
 import Data.List.Extra qualified as LE
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.List.Split qualified as LS
 import Data.Map.Strict qualified as M
 import Data.PQueue.Prio.Min qualified as PQ
@@ -237,6 +238,9 @@ class Sizable a where
 instance Sizable [a] where
   size = fromIntegral . L.length
 
+instance Sizable (NonEmpty a) where
+  size = fromIntegral . F.length
+
 instance Sizable (V.Vector a) where
   size = fromIntegral . V.length
 
@@ -342,6 +346,8 @@ instance (Integral i) => Ixable i IntMap where
 
 class Gettable f k v where
   (|!) :: f k v -> k -> v
+  default (|!) :: (Ixable k (f k)) => f k v -> k -> v
+  (|!) = (!!)
 
 instance (Ord k) => Gettable Map k v where
   (|!) = (M.!)
@@ -351,6 +357,8 @@ instance (A.Ix i) => Gettable A.Array i e where
 
 class MaybeGettable f k v where
   (|?) :: f k v -> k -> Maybe v
+  default (|?) :: (Ixable k (f k)) => f k v -> k -> Maybe v
+  (|?) = (!?)
 
 instance (Ord k) => MaybeGettable Map k v where
   (|?) = flip M.lookup
@@ -374,6 +382,8 @@ instance (Ord k, Ord v) => ValueGettable (Map k v) k v where
 
 class Settable f k v where
   (|.) :: f k v -> (k, v) -> f k v
+  default (|.) :: (Ixable k (f k)) => f k v -> (k, v) -> f k v
+  (|.) = (!.)
 
 instance (Ord k) => Settable Map k v where
   m |. (k, v) = M.insert k v m
@@ -386,6 +396,8 @@ instance (Ord k) => Settable PQ.MinPQueue k v where
 
 class Modifiable f k v where
   (|~) :: f k v -> (k, v -> v) -> f k v
+  default (|~) :: (Gettable f k v, Settable f k v) => f k v -> (k, v -> v) -> f k v
+  xs |~ (k, f) = xs |. (k, (f (xs |! k)))
 
 instance (Ord k) => Modifiable Map k v where
   m |~ (k, f) = M.adjust f k m
@@ -406,6 +418,12 @@ class Valuesable f k v where
 
 instance Valuesable Map k v where
   values = M.elems
+
+class Itemsable f k v where
+  items :: f k v -> [(k, v)]
+
+instance Itemsable Map k v where
+  items = M.toList
 
 class Deletable m k where
   delete :: k -> m -> m
@@ -651,6 +669,12 @@ class Filterable f a where
 instance Filterable [] a where
   filter = L.filter
 
+instance Filterable NonEmpty a where
+  filter p xs =
+    case nonEmpty (NonEmpty.filter p xs) of
+      Nothing -> error "NonEmpty filtered to []"
+      Just ne -> ne
+
 instance Filterable Set a where
   filter = S.filter
 
@@ -785,6 +809,9 @@ instance (Ord a) => Memberable a (RangeOf a) where
 
 type family MagnitudeF a where
   MagnitudeF [_] = Integer
+  MagnitudeF (NonEmpty _) = Integer
+  MagnitudeF (Set _) = Integer
+  MagnitudeF (Map _ _) = Integer
   MagnitudeF (a, a) = MagnitudeF (RangeOf a)
   MagnitudeF (RangeOf a) = a
   MagnitudeF a = MagnitudeF (RangeOf a)
@@ -810,3 +837,15 @@ instance (Integral a) => Magnitude (a, a) where
   (|.|) a = (|.|) (RangeOf Excl a)
 
 instance Magnitude [a]
+
+instance Magnitude (Set a)
+
+instance Magnitude (Map k v)
+
+instance Magnitude (NonEmpty a)
+
+class Transposable a where
+  (⊤) :: a -> a
+
+instance Transposable [[a]] where
+  (⊤) = transpose

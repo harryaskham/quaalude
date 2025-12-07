@@ -3,6 +3,7 @@ module Quaalude.Alias where
 import Control.Lens (ix)
 import Data.Complex (Complex)
 import Data.Fin (Fin)
+import Data.Foldable qualified as F
 import Data.Type.Nat
 import Relude.Unsafe qualified as U
 
@@ -139,9 +140,10 @@ infixl 1 ?
 instance Questionable (Maybe a) where
   (?) = flip fromMaybe
 
+-- cond ??? iftrue $ iffalse
 (???) :: forall a. Bool -> a -> (a -> a)
-True ??? a = flip const a
-False ??? a = const a
+True ??? a = const a
+False ??? a = flip const a
 
 infixl 1 ???
 
@@ -191,12 +193,16 @@ type k :|-> v = Map k v
 
 ixℤ i = ix (fromIntegral i)
 
-(🎜) :: (Ord a) => [a] -> [a]
-(🎜) = sort
+(🎜) :: (Ord a, Foldable f) => f a -> [a]
+(🎜) = sort . F.toList
 
 infixl 0 🎜
 
-(🎝) :: (Ord a) => [a] -> [a]
-(🎝) = sortOn Down
+(🎝) :: (Ord a, Foldable f) => f a -> [a]
+(🎝) = sortOn Down . F.toList
 
 infixl 0 🎝
+
+-- e.g. xs :: [Integer] ≠ [] = NonEmpty a
+type family a ≠ nonEmptyMarker where
+  [a] ≠ [] = NonEmpty a
