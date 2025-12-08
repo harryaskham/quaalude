@@ -9,6 +9,7 @@ import Control.Lens ((^.))
 import Control.Monad (filterM)
 import Control.Monad.Memo
 import Control.Monad.Random.Class
+import Data.Biapplicative
 import Data.Bitraversable
 import Data.Default
 import Data.Fin (Fin)
@@ -23,6 +24,7 @@ import Data.Text qualified as T
 import Data.Text.Read qualified as TR
 import Data.Tuple.Extra (swap)
 import Data.Tuple.HT (uncurry3)
+import Data.Tuple.Solo
 import Data.Type.Nat qualified as N
 import GHC.TypeLits
 import Language.Haskell.TH
@@ -268,12 +270,24 @@ data ℕc = ℕc (Maybe Char) deriving (Eq, Ord, Show)
 unℕc :: ℕc -> Maybe Char
 unℕc (ℕc c) = c
 
+type family CanonicalParseListF (a :: [*]) where
+  CanonicalParseListF '[] = '[]
+  CanonicalParseListF (t ': ts) = CanonicalParseF t ': CanonicalParseListF ts
+
 type family CanonicalParseF a where
-  CanonicalParseF [a] = [CanonicalParseF a]
-  CanonicalParseF (NonEmpty a) = (NonEmpty (CanonicalParseF a))
-  CanonicalParseF (SepByMany _ a) = [CanonicalParseF a]
+  CanonicalParseF (SepByMany _ a) = CanonicalParseF [a]
+  CanonicalParseF (PairSep _ a b) = CanonicalParseF (a, b)
+  CanonicalParseF (RangeOf a) = RangeOf a
+  CanonicalParseF Char = Char
+  CanonicalParseF String = String
+  CanonicalParseF Text = Text
+  CanonicalParseF (HList ts) = HList (CanonicalParseListF ts)
+  CanonicalParseF (Solo a) = (Solo (CanonicalParseF a))
   CanonicalParseF (a, b) = (CanonicalParseF a, CanonicalParseF b)
-  CanonicalParseF (PairSep _ a b) = (CanonicalParseF a, CanonicalParseF b)
+  CanonicalParseF (a, b, c) = (CanonicalParseF a, CanonicalParseF b, CanonicalParseF c)
+  CanonicalParseF [a] = [CanonicalParseF a]
+  CanonicalParseF (f a b) = f (CanonicalParseF a) (CanonicalParseF b)
+  CanonicalParseF (f a) = f (CanonicalParseF a)
   CanonicalParseF a = a
 
 class CanonicalParse a where
@@ -281,9 +295,6 @@ class CanonicalParse a where
 
 instance CanonicalParse Char where
   parseCanonical = noneOf "\n"
-
-instance CanonicalParse String where
-  parseCanonical = many (noneOf "\n")
 
 instance CanonicalParse () where
   parseCanonical = pure ()
@@ -313,7 +324,7 @@ instance CanonicalParse (Natural -> Natural -> Natural) where
 instance (Read a) => CanonicalParse (RangeOf a) where
   parseCanonical = natRange Incl
 
-instance (CanonicalParse a, KnownSymbol sep) => CanonicalParse (SepByMany sep a) where
+instance (CanonicalParse a, CanonicalParseF [a] ~ [CanonicalParseF a], KnownSymbol sep) => CanonicalParse (SepByMany sep a) where
   parseCanonical =
     do
       let seps = many1 (oneOf (symbolVal (Proxy @sep)))
@@ -332,78 +343,117 @@ instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
       Nothing -> fail "Expected non-empty list"
       Just ne -> return ne
 
-instance {-# OVERLAPS #-} (CanonicalParse a) => CanonicalParse [[a]] where
-  parseCanonical = many1 (parseCanonical @[a])
+instance
+  {-# OVERLAPS #-}
+  ( CanonicalParse a,
+    CanonicalParse b,
+    CanonicalParseF (p a b) ~ p (CanonicalParseF a) (CanonicalParseF b),
+    Biapplicative p
+  ) =>
+  CanonicalParse (p a b)
+  where
+  parseCanonical = bipure @p <$> parseCanonical @a <*> parseCanonical @b
 
-instance {-# OVERLAPS #-} (CanonicalParse a) => CanonicalParse [a] where
+instance {-# OVERLAPS #-} (CanonicalParse a, CanonicalParseF [a] ~ [CanonicalParseF a]) => CanonicalParse [a] where
   parseCanonical = parseCanonical @(SepByMany " " a) <* manyTill anyChar eol
 
-instance (CanonicalParse a, CanonicalParse b) => CanonicalParse (a, b) where
-  parseCanonical = try ((,) <$> parseCanonical @a <*> parseCanonical @b)
+instance {-# OVERLAPS #-} (CanonicalParse [a]) => CanonicalParse [[a]] where
+  parseCanonical = many1 (parseCanonical @[a])
 
--- parseCanonical = ((,) <$> (oneDiscarding (parseCanonical @a)) <*> (oneDiscarding (parseCanonical @b)))
--- parseCanonical = parseCanonical @(PairSep "\n" a b)
+instance {-# OVERLAPS #-} CanonicalParse String where
+  parseCanonical = many (noneOf "\n")
 
-(⋯) ::
-  forall {a}.
+class (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a where
+  parseCanonicalSelf :: Parser a
+  parseCanonicalSelf = parseCanonical @a
+
+instance (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a
+
+class
+  ( CanonicalParse (CanonicalTuple t),
+    CanonicalParseListF (Tup2ListF (MapCanonicalParseF t)) ~ Tup2ListF (MapCanonicalParseF t),
+    CanonicalParseF t ~ MapCanonicalParseF t,
+    List2Tup (CanonicalTupleL t) (MapCanonicalParseF t)
+  ) =>
+  CanonicalParseTup t
+  where
+  parseCanonicalTuple :: Parser (MapCanonicalParseF t)
+  parseCanonicalTuple = list2Tup @(CanonicalTupleL t) @(MapCanonicalParseF t) <$> parseCanonical @(CanonicalTuple t)
+
+instance
+  ( CanonicalParse (CanonicalTuple t),
+    CanonicalParseListF (Tup2ListF (MapCanonicalParseF t)) ~ Tup2ListF (MapCanonicalParseF t),
+    CanonicalParseF t ~ MapCanonicalParseF t,
+    List2Tup (CanonicalTupleL t) (MapCanonicalParseF t)
+  ) =>
+  CanonicalParseTup t
+
+type CanonicalTupleL t = Tup2ListF (MapCanonicalParseF t)
+
+type CanonicalTuple t = HList (CanonicalTupleL t)
+
+type family MapCanonicalParseF t where
+  MapCanonicalParseF () = ()
+  MapCanonicalParseF (Solo a) = Solo (CanonicalParseF a)
+  MapCanonicalParseF (a, b) = (CanonicalParseF a, CanonicalParseF b)
+  MapCanonicalParseF (a, b, c) = (CanonicalParseF a, CanonicalParseF b, CanonicalParseF c)
+
+-- instance {-# OVERLAPS #-} (CanonicalParseTup (a, b)) => CanonicalParse (a, b) where
+--  parseCanonical = parseCanonicalTuple @(a, b)
+instance
   ( CanonicalParse a,
-    CanonicalParseF a ~ a
+    CanonicalParse b
   ) =>
-  String -> a
-(⋯) = (|- parseCanonical @a)
+  CanonicalParse (a, b)
+  where
+  parseCanonical = (,) <$> parseCanonical @a <*> parseCanonical @b
 
-(⋮) ::
-  forall {a} {f} {x}.
-  ( a ~ f x,
-    CanonicalParse (f x),
-    CanonicalParseF (f x) ~ (f x)
+-- instance (CanonicalParseTup (a, b, c)) => CanonicalParse (a, b, c) where
+instance
+  ( CanonicalParse a,
+    CanonicalParse b,
+    CanonicalParse c
   ) =>
-  String -> a
-(⋮) = (|- parseCanonical @(f x))
+  CanonicalParse (a, b, c)
+  where
+  parseCanonical = (,,) <$> parseCanonical @a <*> parseCanonical @b <*> parseCanonical @c -- parseCanonicalTuple @(a, b, c)
 
-(⋮×⋯) ::
-  forall {a} {f} {g} {l} {r}.
-  ( a ~ (f l, g r),
-    CanonicalParse (f l),
-    CanonicalParse (g r),
-    CanonicalParseF (f l) ~ f l,
-    CanonicalParseF (g r) ~ g r
-  ) =>
-  String -> a
-(⋮×⋯) = (|- parseCanonical @(f l, g r))
+instance CanonicalParse (HList '[]) where
+  parseCanonical = pure HNil
 
-(⋮↵⋯) ::
-  forall {a} {f} {g} {l} {r}.
-  ( a ~ (f l, g r),
-    CanonicalParse (f l),
-    CanonicalParse (g r),
-    CanonicalParseF (f l) ~ f l,
-    CanonicalParseF (g r) ~ g r
+instance
+  ( CanonicalParse t,
+    CanonicalParseF t ~ t,
+    CanonicalParse (HList ts),
+    CanonicalParseF (HList ts) ~ HList ts
   ) =>
-  String -> a
-(⋮↵⋯) = (|- parseCanonical @(PairSep "\n" (f l) (g r)))
+  CanonicalParse (HList (t ': ts))
+  where
+  parseCanonical = (.*.) <$> parseCanonical @t <*> parseCanonical @(HList ts)
 
-(⋮×⋮) ::
-  forall {a} {l} {r}.
-  ( a ~ (l, r),
-    CanonicalParse l,
-    CanonicalParse r,
-    CanonicalParseF l ~ l,
-    CanonicalParseF r ~ r
-  ) =>
-  String -> a
-(⋮×⋮) = (|- parseCanonical @(l, r))
+(⋯) :: (CanonicalParseSelf a) => String -> a
+(⋯) = (|- parseCanonicalSelf)
+
+(⋮) :: (CanonicalParseSelf (NonEmpty a)) => Parser (NonEmpty a)
+(⋮) = parseCanonicalSelf
+
+(⋮×⋮) :: (CanonicalParseSelf (NonEmpty a, NonEmpty b)) => Parser (NonEmpty a, NonEmpty b)
+(⋮×⋮) = parseCanonicalSelf
 
 (⋮↵⋮) ::
-  forall {a} {l} {r}.
-  ( a ~ (l, r),
-    CanonicalParse l,
-    CanonicalParse r,
-    CanonicalParseF l ~ l,
-    CanonicalParseF r ~ r
-  ) =>
-  String -> a
-(⋮↵⋮) = (|- parseCanonical @(PairSep "\n" l r))
+  forall a b.
+  (CanonicalParse (PairSep "\n" (NonEmpty a) (NonEmpty b))) =>
+  Parser (CanonicalParseF (PairSep "\n" (NonEmpty a) (NonEmpty b)))
+(⋮↵⋮) = parseCanonical @(PairSep "\n" (NonEmpty a) (NonEmpty b))
+
+(⋮×⋯) :: (CanonicalParseSelf (NonEmpty a, [b])) => Parser (NonEmpty a, [b])
+(⋮×⋯) = parseCanonicalSelf
+
+(⋮↵⋯) ::
+  forall a b.
+  (CanonicalParse (PairSep "\n" (NonEmpty a) [b])) =>
+  Parser (CanonicalParseF (PairSep "\n" (NonEmpty a) [b]))
+(⋮↵⋯) = parseCanonical @(PairSep "\n" (NonEmpty a) [b])
 
 natRange :: (Read a) => RangeSize -> Parser (RangeOf a)
 natRange rs = RangeOf rs . toTuple2 <$> (natural `sepBy1` (char '-'))

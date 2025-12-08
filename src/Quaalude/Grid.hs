@@ -1138,13 +1138,16 @@ instance (Swappable Map k a, Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) w
 
 type cs ▦ k = G k (Cell cs)
 
-gridParseCanonical :: (Griddable Identity g k a, CanonicalParseF (g k a) ~ g k a) => Parser (g k a)
+gridParseCanonical ::
+  forall g k a.
+  (Griddable Identity g (CanonicalParseF k) (CanonicalParseF a)) =>
+  Parser (g (CanonicalParseF k) (CanonicalParseF a))
 gridParseCanonical = do
   s <- manyTill anyChar eof
   return $ readGrid (T.pack s)
 
-instance (Griddable Identity ListGrid' k a) => CanonicalParse (ListGrid' k a) where
-  parseCanonical = gridParseCanonical
+instance (Griddable Identity ListGrid' (CanonicalParseF k) (CanonicalParseF a)) => CanonicalParse (ListGrid' k a) where
+  parseCanonical = gridParseCanonical @ListGrid' @k @a
 
-instance (Griddable Identity G k a) => CanonicalParse (G k a) where
-  parseCanonical = gridParseCanonical
+instance (Griddable Identity G (CanonicalParseF k) (CanonicalParseF a)) => CanonicalParse (G k a) where
+  parseCanonical = gridParseCanonical @G @k @a

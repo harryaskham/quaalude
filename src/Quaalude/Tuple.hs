@@ -9,7 +9,7 @@ import Text.Parsec
 import Prelude hiding (natVal)
 
 type family TupConsF a as where
-  TupConsF a () = a
+  TupConsF a () = (Solo a)
   TupConsF a (Solo b) = (a, b)
   TupConsF a (b, c) = (a, b, c)
   TupConsF a (b, c, d) = (a, b, c, d)
