@@ -258,6 +258,10 @@ manyInLineDiscarding p =
 
 data PairSep (sep :: Symbol) a b = PairSep a b
 
+data TupSep (sep :: Symbol) t = TupSep t
+
+data HListSep sep xs = HListSep (HList xs)
+
 data SepByMany (sep :: Symbol) a = SepByMany a
 
 data ℕw = ℕw String ℕ deriving (Eq, Ord, Show)
@@ -277,11 +281,13 @@ type family CanonicalParseListF (a :: [*]) where
 type family CanonicalParseF a where
   CanonicalParseF (SepByMany _ a) = CanonicalParseF [a]
   CanonicalParseF (PairSep _ a b) = CanonicalParseF (a, b)
+  CanonicalParseF (TupSep sym t) = CanonicalParseF t
   CanonicalParseF (RangeOf a) = RangeOf a
   CanonicalParseF Char = Char
   CanonicalParseF String = String
   CanonicalParseF Text = Text
   CanonicalParseF (HList ts) = HList (CanonicalParseListF ts)
+  CanonicalParseF (HListSep sep ts) = HList (CanonicalParseListF ts)
   CanonicalParseF (Solo a) = (Solo (CanonicalParseF a))
   CanonicalParseF (a, b) = (CanonicalParseF a, CanonicalParseF b)
   CanonicalParseF (a, b, c) = (CanonicalParseF a, CanonicalParseF b, CanonicalParseF c)
@@ -335,6 +341,29 @@ instance (CanonicalParse a, CanonicalParse b, KnownSymbol sep) => CanonicalParse
     a <- parseCanonical @a <* string (symbolVal (Proxy @sep))
     b <- parseCanonical @b
     return (a, b)
+
+instance CanonicalParse (HListSep sep '[]) where
+  parseCanonical = pure HNil
+
+instance
+  ( CanonicalParse (HListSep sep ts),
+    CanonicalParse t,
+    KnownSymbol sep
+  ) =>
+  CanonicalParse (HListSep sep (t ': ts))
+  where
+  parseCanonical =
+    (.*.)
+      <$> parseCanonical @t
+      <*> ((string (symbolVal (Proxy @sep)) *> parseCanonical @(HListSep sep ts)))
+
+instance
+  ( List2Tup (CanonicalParseListF (Tup2ListF t)) (CanonicalParseF t),
+    CanonicalParse (HListSep sep (Tup2ListF t))
+  ) =>
+  CanonicalParse (TupSep sep t)
+  where
+  parseCanonical = list2Tup <$> parseCanonical @(HListSep sep (Tup2ListF t))
 
 instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
   parseCanonical = do
@@ -434,8 +463,11 @@ instance
 (⋯) :: (CanonicalParseSelf a) => String -> a
 (⋯) = (|- parseCanonicalSelf)
 
-(⋮) :: (CanonicalParseSelf (NonEmpty a)) => Parser (NonEmpty a)
-(⋮) = parseCanonicalSelf
+parseVia :: forall v a. (CanonicalParseF v ~ CanonicalParseF a, CanonicalParse v) => Parser (CanonicalParseF a)
+parseVia = parseCanonical @v
+
+(⋮) :: forall v a. (CanonicalParseF v ~ CanonicalParseF a, CanonicalParse v) => Parser (CanonicalParseF a)
+(⋮) = parseVia @v @a
 
 (⋮×⋮) :: (CanonicalParseSelf (NonEmpty a, NonEmpty b)) => Parser (NonEmpty a, NonEmpty b)
 (⋮×⋮) = parseCanonicalSelf
