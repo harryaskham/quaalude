@@ -258,24 +258,31 @@ type family TupFstF a where
   TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = a
   TupFstF (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = a
 
-class TupFst a fst where
-  tupFst :: a -> fst
+class TupFst a where
+  tupFst :: a -> TupFstF a
 
-instance (TupSnoc a fst tail) => TupFst a fst where
+instance (fst ~ TupFstF a, TupSnoc a fst tail) => TupFst a where
   tupFst = fst . tupSnoc @a @fst @tail
 
 type family TupNthF n a where
   TupNthF 0 a = TupFstF a
   TupNthF n a = TupNthF (n - 1) (TupTailF a)
 
-class TupNth n a nth where
-  tupNth :: a -> nth
+class TupNth n a where
+  tupNth :: a -> TupNthF n a
 
-instance (TupFst a fst) => TupNth 0 a fst where
-  tupNth = tupFst
+instance (TupFst a) => TupNth 0 a where
+  tupNth = tupFst @a
 
-instance (TupTail a tail, TupNth (n - 1) tail nth) => TupNth n a nth where
-  tupNth = tupNth @(n - 1) @tail @nth . tupTail @a @tail
+instance
+  ( TupNthF (n - 1) tail ~ TupNthF n a,
+    tail ~ TupTailF a,
+    TupTail a tail,
+    TupNth (n - 1) tail
+  ) =>
+  TupNth n a
+  where
+  tupNth = tupNth @(n - 1) @tail . tupTail @a @tail
 
 type family TupHeadF a where
   TupHeadF () = TypeError ('Text "TupHeadF: ()")
@@ -287,15 +294,44 @@ class TupHead a head where
 instance (TupSnoc a head tail) => TupHead a head where
   tupHead = fst . tupSnoc @a @head @tail
 
+type family TupSndF a where
+  TupSndF (a, b) = b
+
 type family TupTailF a where
   TupTailF () = TypeError ('Text "TupTailF: ()")
-  TupTailF a = TupNthF 1 (TupSnocF a)
+  TupTailF a = TupSndF (TupSnocF a)
 
 class TupTail a tail where
   tupTail :: a -> tail
 
 instance (tail ~ TupTailF a, TupSnoc a head tail) => TupTail a tail where
   tupTail = snd . tupSnoc @a @head @tail
+
+type family TupInitFL t where
+  TupInitFL '[] = '[]
+  TupInitFL '[t] = '[]
+  TupInitFL (t ': ts) = (t ': (TupInitFL ts))
+
+type TupInitF t = List2TupF (TupInitFL (Tup2ListF t))
+
+class TupInit t where
+  tupInit :: List2TupF t -> TupInitF (List2TupF t)
+
+instance TupInit '[] where
+  tupInit _ = ()
+
+instance
+  ( TupHead (List2TupF (t ': ts)) t,
+    TupCons t (TupInitF (List2TupF ts)) (TupInitF (List2TupF (t ': ts))),
+    TupInit ts,
+    TupTail (List2TupF (t ': ts)) (List2TupF ts)
+  ) =>
+  TupInit (t ': ts)
+  where
+  tupInit t =
+    tupCons @t @(TupInitF (List2TupF ts)) @(TupInitF (List2TupF (t ': ts)))
+      (tupHead @(List2TupF (t ': ts)) @t t)
+      (tupInit @ts (tupTail @(List2TupF (t ': ts)) @(List2TupF ts) t))
 
 type family Tup2ListF a where
   Tup2ListF () = '[]
@@ -375,22 +411,22 @@ instance
     let (head, tail) = tupSnoc @t @head @tail t
      in head .*. tup2List @tail @ltail tail
 
-class List2Tup l t where
-  list2Tup :: HList l -> t
+class List2Tup l where
+  list2Tup :: HList l -> List2TupF l
 
-instance List2Tup '[] () where
+instance List2Tup '[] where
   list2Tup = const ()
 
-instance List2Tup '[a] (Solo a) where
-  list2Tup (HCons a HNil) = MkSolo a
-
 instance
-  ( List2Tup ltail tail,
-    TupCons head tail t
+  ( List2Tup tail,
+    TupCons head (List2TupF tail) (List2TupF (head ': tail))
   ) =>
-  List2Tup (head ': ltail) t
+  List2Tup (head ': tail)
   where
-  list2Tup (HCons head htail) = tupCons @head @tail @t head (list2Tup @ltail @tail htail)
+  list2Tup (HCons head tail) =
+    tupCons @head @(List2TupF tail) @(List2TupF (head ': tail))
+      head
+      (list2Tup @tail tail)
 
 (<$@>) :: (Functor f) => (a -> b -> c) -> f (a, b) -> f c
 f <$@> a = uncurry f <$> a
@@ -491,6 +527,8 @@ type family ToTupF a where
   ToTupF [a] = [ToTupF a]
   ToTupF a = Solo a
 
+type a :^ n = ToTupF (HomTup n a)
+
 class ToTup (n :: Nat) a b where
   toTup :: a -> b
 
@@ -550,8 +588,8 @@ instance (KnownNat n) => ToTups [a] [HomTup n a] where
 instance ToTups () () where
   toTups = const ()
 
-instance (List2Tup l t) => ToTups (HList l) t where
-  toTups = list2Tup @l @t
+instance (List2Tup l, t ~ List2TupF l) => ToTups (HList l) t where
+  toTups = list2Tup @l
 
 class MkHomTup n a b where
   mkHomTup :: a -> b

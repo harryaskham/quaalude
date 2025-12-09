@@ -3,6 +3,9 @@ module Quaalude.Coord where
 import Data.Array
 import Data.Default
 import Data.Foldable qualified as F
+import Data.HList
+import Data.Tuple.Solo
+import GHC.TypeNats
 import Quaalude.Alias
 import Quaalude.Collection
 import Quaalude.Tuple
@@ -179,13 +182,11 @@ instance Coord' Rational Rational (Rational, Rational) where
   toXY (a, b) = (toRational a, toRational b)
 
 class
-  ( Coord' Int a a
-  ) =>
+  (Coord' Int a a) =>
   Coord a
 
 instance
-  ( Coord' Int a a
-  ) =>
+  (Coord' Int a a) =>
   Coord a
 
 manhattan0 :: Coord2 -> Int
@@ -202,6 +203,32 @@ manhattan3 (x1, y1, z1) (x2, y2, z2) = abs (x1 - x2) + abs (y1 - y2) + abs (z1 -
 
 manhattan4 :: Coord4 -> Coord4 -> Int
 manhattan4 (x1, y1, z1, w1) (x2, y2, z2, w2) = abs (x1 - x2) + abs (y1 - y2) + abs (z1 - z2) + abs (w1 - w2)
+
+class SSDL (n :: Nat) a b where
+  ssdl :: a -> a -> b
+
+instance (Num a) => SSDL 0 (HList '[]) a where
+  ssdl _ _ = 0
+
+instance
+  ( Num a,
+    SSDL (n - 1) (HList as) a
+  ) =>
+  SSDL n (HList (a ': as)) a
+  where
+  ssdl (HCons a as) (HCons b bs) = (a - b) ^ 2 + ssdl @(n - 1) @(HList as) @a as bs
+
+class SSD (n :: Nat) t a where
+  ssd :: t -> t -> a
+
+instance (Num a, Tup2List t (Tup2ListF t), SSDL n (HList (Tup2ListF t)) a) => SSD n t a where
+  ssd a b =
+    ssdl @n @(HList (Tup2ListF t)) @a
+      (tup2List @t @(Tup2ListF t) a)
+      (tup2List @t @(Tup2ListF t) b)
+
+ssd³ :: (Num a) => (a, a, a) -> (a, a, a) -> a
+ssd³ (x0, y0, z0) (x1, y1, z1) = (x0 - x1) ^ 2 + (y0 - y1) ^ 2 + (z0 - z1) ^ 2
 
 move :: forall i c. (Num c, Num i, Coord' i c (c, c)) => Dir2 -> i -> (c, c) -> (c, c)
 move DirUp n = mapXY @i @(c, c) (second (subtract n))
@@ -254,9 +281,9 @@ instance (Num a, Integral a, Monad f, Alternative f, Mkable f (a, a)) => Vicinit
 neighbors :: (Num a) => (a, a) -> [(a, a)]
 neighbors (x, y) =
   [ (x + fromIntegral xO, y + fromIntegral yO)
-    | xO <- [-1 .. 1],
-      yO <- [-1 .. 1],
-      xO /= 0 || yO /= 0
+  | xO <- [-1 .. 1],
+    yO <- [-1 .. 1],
+    xO /= 0 || yO /= 0
   ]
 
 neighborsNoDiags :: (Num a) => (a, a) -> [(a, a)]
@@ -270,10 +297,10 @@ neighborsNoDiags (x, y) =
 neighbors3 :: Coord3 -> [Coord3]
 neighbors3 (x, y, z) =
   [ (x + xO, y + yO, z + zO)
-    | xO <- [-1 .. 1],
-      yO <- [-1 .. 1],
-      zO <- [-1 .. 1],
-      xO /= 0 || yO /= 0 || zO /= 0
+  | xO <- [-1 .. 1],
+    yO <- [-1 .. 1],
+    zO <- [-1 .. 1],
+    xO /= 0 || yO /= 0 || zO /= 0
   ]
 
 partitionSpace :: Coord3 -> Coord3 -> [(Coord3, Coord3)]

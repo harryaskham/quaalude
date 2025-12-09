@@ -1121,19 +1121,14 @@ instance Convable (Grid' k a) (Map k a) where
   co (Grid g) = g
 
 instance
-  ( Applicative m,
-    Monoid (m a),
-    Semigroup (m a),
-    Semigroup (m k),
-    Swappable Map k a,
-    SwapWithable Map m k a,
-    Ord k
+  ( Semigroup (m k),
+    SwapWithable Map m k a
   ) =>
   Convable (Map k a) (Map a (m k))
   where
   co = swapcat
 
-instance (Swappable Map k a, Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) where
+instance (Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) where
   co = swapcat . co @(Grid' k a) @(Map k a)
 
 type cs ▦ k = G k (Cell cs)

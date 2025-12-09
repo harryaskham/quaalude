@@ -14,7 +14,7 @@ import Quaalude.Encoding.JSON
     PrefixedSnakeOmitNothingUntagged,
   )
 import Quaalude.TH
-import Prelude hiding (Dec, Type)
+import Prelude hiding (Type)
 
 deriveJSONPrefixed :: [Name] -> Q [Dec]
 deriveJSONPrefixed names = do

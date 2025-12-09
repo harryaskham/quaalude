@@ -260,6 +260,8 @@ data PairSep (sep :: Symbol) a b = PairSep a b
 
 data TupSep (sep :: Symbol) t = TupSep t
 
+data CSV a (n :: Nat) = CSV (a :^ n)
+
 data HListSep sep xs = HListSep (HList xs)
 
 data SepByMany (sep :: Symbol) a = SepByMany a
@@ -281,17 +283,18 @@ type family CanonicalParseListF (a :: [*]) where
 type family CanonicalParseF a where
   CanonicalParseF (SepByMany _ a) = CanonicalParseF [a]
   CanonicalParseF (PairSep _ a b) = CanonicalParseF (a, b)
-  CanonicalParseF (TupSep sym t) = CanonicalParseF t
+  CanonicalParseF (TupSep _ t) = CanonicalParseF t
+  CanonicalParseF (CSV a n) = CanonicalParseF (a :^ n)
   CanonicalParseF (RangeOf a) = RangeOf a
   CanonicalParseF Char = Char
   CanonicalParseF String = String
   CanonicalParseF Text = Text
+  CanonicalParseF [a] = [CanonicalParseF a]
   CanonicalParseF (HList ts) = HList (CanonicalParseListF ts)
-  CanonicalParseF (HListSep sep ts) = HList (CanonicalParseListF ts)
+  CanonicalParseF (HListSep _ ts) = CanonicalParseF (HList ts)
   CanonicalParseF (Solo a) = (Solo (CanonicalParseF a))
   CanonicalParseF (a, b) = (CanonicalParseF a, CanonicalParseF b)
   CanonicalParseF (a, b, c) = (CanonicalParseF a, CanonicalParseF b, CanonicalParseF c)
-  CanonicalParseF [a] = [CanonicalParseF a]
   CanonicalParseF (f a b) = f (CanonicalParseF a) (CanonicalParseF b)
   CanonicalParseF (f a) = f (CanonicalParseF a)
   CanonicalParseF a = a
@@ -346,24 +349,40 @@ instance CanonicalParse (HListSep sep '[]) where
   parseCanonical = pure HNil
 
 instance
-  ( CanonicalParse (HListSep sep ts),
-    CanonicalParse t,
-    KnownSymbol sep
-  ) =>
-  CanonicalParse (HListSep sep (t ': ts))
+  (CanonicalParse t) =>
+  CanonicalParse (HListSep sep '[t])
   where
   parseCanonical =
     (.*.)
       <$> parseCanonical @t
-      <*> ((string (symbolVal (Proxy @sep)) *> parseCanonical @(HListSep sep ts)))
+      <*> pure HNil
 
 instance
-  ( List2Tup (CanonicalParseListF (Tup2ListF t)) (CanonicalParseF t),
+  ( CanonicalParse (HListSep sep (u ': ts)),
+    CanonicalParse t,
+    KnownSymbol sep
+  ) =>
+  CanonicalParse (HListSep sep (t ': u ': ts))
+  where
+  parseCanonical =
+    (.*.)
+      <$> parseCanonical @t
+      <*> (string (symbolVal (Proxy @sep)) *> parseCanonical @(HListSep sep (u ': ts)))
+
+instance
+  ( List2Tup (CanonicalParseListF (Tup2ListF t)),
+    List2TupF (CanonicalParseListF (Tup2ListF t)) ~ CanonicalParseF t,
     CanonicalParse (HListSep sep (Tup2ListF t))
   ) =>
   CanonicalParse (TupSep sep t)
   where
   parseCanonical = list2Tup <$> parseCanonical @(HListSep sep (Tup2ListF t))
+
+instance
+  (CanonicalParse (TupSep "," (a :^ n))) =>
+  CanonicalParse (CSV a n)
+  where
+  parseCanonical = parseCanonical @(TupSep "," (a :^ n))
 
 instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
   parseCanonical = do
@@ -399,27 +418,27 @@ class (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a where
 instance (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a
 
 class
-  ( CanonicalParse (CanonicalTuple t),
-    CanonicalParseListF (Tup2ListF (MapCanonicalParseF t)) ~ Tup2ListF (MapCanonicalParseF t),
-    CanonicalParseF t ~ MapCanonicalParseF t,
-    List2Tup (CanonicalTupleL t) (MapCanonicalParseF t)
+  ( CanonicalParseSelf (HList (CanonicalTupleL t)),
+    List2Tup (CanonicalTupleL t),
+    List2TupF (CanonicalTupleL t) ~ CanonicalParseF t
   ) =>
   CanonicalParseTup t
   where
-  parseCanonicalTuple :: Parser (MapCanonicalParseF t)
-  parseCanonicalTuple = list2Tup @(CanonicalTupleL t) @(MapCanonicalParseF t) <$> parseCanonical @(CanonicalTuple t)
+  parseCanonicalTuple :: Parser (CanonicalParseF t)
+  parseCanonicalTuple =
+    list2Tup @(CanonicalTupleL t)
+      <$> parseCanonicalSelf @(HList (CanonicalTupleL t))
 
 instance
-  ( CanonicalParse (CanonicalTuple t),
-    CanonicalParseListF (Tup2ListF (MapCanonicalParseF t)) ~ Tup2ListF (MapCanonicalParseF t),
-    CanonicalParseF t ~ MapCanonicalParseF t,
-    List2Tup (CanonicalTupleL t) (MapCanonicalParseF t)
+  ( CanonicalParseSelf (HList (CanonicalTupleL t)),
+    List2Tup (CanonicalTupleL t),
+    List2TupF (CanonicalTupleL t) ~ CanonicalParseF t
   ) =>
   CanonicalParseTup t
 
 type CanonicalTupleL t = Tup2ListF (MapCanonicalParseF t)
 
-type CanonicalTuple t = HList (CanonicalTupleL t)
+type CanonicalTupleHList t = HList (CanonicalTupleL t)
 
 type family MapCanonicalParseF t where
   MapCanonicalParseF () = ()
@@ -452,22 +471,24 @@ instance CanonicalParse (HList '[]) where
 
 instance
   ( CanonicalParse t,
-    CanonicalParseF t ~ t,
-    CanonicalParse (HList ts),
-    CanonicalParseF (HList ts) ~ HList ts
+    CanonicalParseSelf (HList ts)
   ) =>
   CanonicalParse (HList (t ': ts))
   where
-  parseCanonical = (.*.) <$> parseCanonical @t <*> parseCanonical @(HList ts)
+  parseCanonical = (.*.) <$> parseCanonical @t <*> parseCanonicalSelf @(HList ts)
 
 (⋯) :: (CanonicalParseSelf a) => String -> a
 (⋯) = (|- parseCanonicalSelf)
 
-parseVia :: forall v a. (CanonicalParseF v ~ CanonicalParseF a, CanonicalParse v) => Parser (CanonicalParseF a)
-parseVia = parseCanonical @v
+class (CanonicalParse v) => CanonicalParseVia v a where
+  parseVia :: Parser a
+  default parseVia :: (CanonicalParseF v ~ a) => Parser a
+  parseVia = parseCanonical @v
 
-(⋮) :: forall v a. (CanonicalParseF v ~ CanonicalParseF a, CanonicalParse v) => Parser (CanonicalParseF a)
-(⋮) = parseVia @v @a
+  (⋮) :: (CanonicalParseF v ~ a, CanonicalParse v) => Parser a
+  (⋮) = parseVia @v @a
+
+instance (CanonicalParse v, CanonicalParseF v ~ a) => CanonicalParseVia v a
 
 (⋮×⋮) :: (CanonicalParseSelf (NonEmpty a, NonEmpty b)) => Parser (NonEmpty a, NonEmpty b)
 (⋮×⋮) = parseCanonicalSelf
