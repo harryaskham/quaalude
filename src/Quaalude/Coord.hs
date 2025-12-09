@@ -228,7 +228,7 @@ instance (Num a, Tup2List t (Tup2ListF t), SSDL n (HList (Tup2ListF t)) a) => SS
       (tup2List @t @(Tup2ListF t) b)
 
 ds² :: (Num a) => (a, a) -> (a, a) -> a
-ds² (x0, y0) (x1, y1) = abs (x0 - x1 + 1) * abs (y0 - y1 + 1)
+ds² (x0, y0) (x1, y1) = (abs (x0 - x1) + 1) * (abs (y0 - y1) + 1)
 
 ssd² :: (Num a) => (a, a) -> (a, a) -> a
 ssd² (x0, y0) (x1, y1) = (x0 - x1) ^ 2 + (y0 - y1) ^ 2
