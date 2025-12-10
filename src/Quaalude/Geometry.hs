@@ -68,6 +68,9 @@ intersectRectangles ((ax0, ay0), (ax1, ay1)) ((bx0, by0), (bx1, by1)) =
     ∧ (min by0 by1 <= max ay0 ay1)
     ∧ (max by0 by1 >= min ay0 ay1)
 
+(□?□) :: ℤ² × ℤ² -> ℤ² × ℤ² -> 𝔹
+a □?□ b = intersectRectangles a b
+
 turnOutside :: [ℤ² × ℤ²] -> (Dir² -> Dir²)
 turnOutside ((a, b) : (c, d) : rest) =
   let [d0] = goingTo a b

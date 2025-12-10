@@ -487,8 +487,8 @@ class (CanonicalParse v) => CanonicalParseVia v a where
   default parseVia :: (CanonicalParseF v ~ a) => Parser a
   parseVia = parseCanonical @v
 
-  (⋮) :: (CanonicalParseF v ~ a, CanonicalParse v) => Parser a
-  (⋮) = parseVia @v @a
+  (⋮) :: (CanonicalParseF v ~ a, CanonicalParse v) => String -> a
+  (⋮) s = s |- parseVia @v @a
 
 instance (CanonicalParse v, CanonicalParseF v ~ a) => CanonicalParseVia v a
 
@@ -1217,3 +1217,9 @@ infixr 1 ==?>
 a ->> c = (a, c)
 
 infixr 1 ->>
+
+(⊨) :: a -> Bool
+(⊨) _ = True
+
+(⊭) :: a -> Bool
+(⊭) _ = False
