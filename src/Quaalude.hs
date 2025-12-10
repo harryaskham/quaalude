@@ -46,6 +46,7 @@ import Data.Distributive as X
 import Data.Either as X
 import Data.GADT.Show.TH as X
 import Data.HList as X (HList (..), (.*.))
+import Data.List.Extra as X (groupOn)
 import Data.List.GroupBy as X
 import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, foldl', foldr, fromList, keys, lookup, map, mapMaybe, null, size, split, splitAt, take, toList, (!?), (\\))
 import Data.PQueue.Prio.Min (deleteFindMin)
