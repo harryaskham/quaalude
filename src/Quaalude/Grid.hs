@@ -956,7 +956,7 @@ convolveWith f kernel g =
   let (w, h) = gridDims kernel
    in convolve (0, h, 0, w) (f kernel) g
 
-data Perimeter k = Perimeter
+data GridPerimeter k = GridPerimeter
   { pTop :: [k],
     pRight :: [k],
     pBottom :: [k],
@@ -964,23 +964,23 @@ data Perimeter k = Perimeter
   }
   deriving (Eq, Ord, Show)
 
-pFrom :: Perimeter Coord2 -> Dir2 -> [Coord2]
+pFrom :: GridPerimeter Coord2 -> Dir2 -> [Coord2]
 pFrom p DirDown = pTop p
 pFrom p DirLeft = pRight p
 pFrom p DirRight = pLeft p
 pFrom p DirUp = pBottom p
 
-perimeterM :: (Griddable m g Coord2 a) => g Coord2 a -> m (Perimeter Coord2)
-perimeterM g = do
+gridPerimeterM :: (Griddable m g Coord2 a) => g Coord2 a -> m (GridPerimeter Coord2)
+gridPerimeterM g = do
   (maxX, maxY) <- maxXYM g
   let top = [(x, 0) | x <- [0 .. maxX]]
   let right = [(maxX, y) | y <- [0 .. maxY]]
   let bottom = [(x, maxY) | x <- [0 .. maxX]]
   let left = [(0, y) | y <- [0 .. maxY]]
-  return $ Perimeter top right bottom left
+  return $ GridPerimeter top right bottom left
 
-perimeter :: (Griddable Identity g Coord2 a) => g Coord2 a -> Perimeter Coord2
-perimeter = runIdentity . perimeterM
+gridPerimeter :: (Griddable Identity g Coord2 a) => g Coord2 a -> GridPerimeter Coord2
+gridPerimeter = runIdentity . gridPerimeterM
 
 instance (Griddable Identity Grid' k a) => Memberable k (Grid' k a) where
   a ∈ g = gridMember a g

@@ -262,6 +262,8 @@ data TupSep (sep :: Symbol) t = TupSep t
 
 data CSV a (n :: Nat) = CSV (a :^ n)
 
+type a ⹉ n = CSV a n
+
 data HListSep sep xs = HListSep (HList xs)
 
 data SepByMany (sep :: Symbol) a = SepByMany a
