@@ -733,6 +733,20 @@ instance Tailable [] a where
 instance (Ord a) => Tailable Set a where
   tail' s = S.delete (head' s) s
 
+data Ť f a = Ť (f a)
+
+data Ȟ f a = Ȟ (f a)
+
+type instance ApplyUF (Ȟ f a) = a
+
+type instance ApplyUF (Ť f a) = f a
+
+instance (Headable f a) => ApplyU (Ȟ f a) a where
+  (!>) (Ȟ fa) = head' fa
+
+instance (Tailable f a) => ApplyU (Ť f a) (f a) where
+  (!>) (Ť fa) = tail' fa
+
 class Snocable f a where
   snoc' :: f a -> (a, f a)
   default snoc' :: (Headable f a, Tailable f a) => f a -> (a, f a)

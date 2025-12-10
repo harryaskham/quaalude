@@ -302,17 +302,23 @@ instance (Foldable m) => FoldFn (Fold FoldLeft Init1 m acc a) where
 instance (Foldable m) => FoldFn (Fold FoldRight Init1 m acc a) where
   foldFn _ f _ xs = F.foldr1 f xs
 
-class ApplyFold f where
-  (!>) :: f -> FoldAccDF f
+type family ApplyUF f
+
+type instance ApplyUF (Fold dir init m acc a) = FoldAccDF (Fold dir init m acc a)
+
+class (o ~ ApplyUF f) => ApplyU f o where
+  (!>) :: f -> o
 
 instance
-  ( FoldFnDF f ~ (FoldAccFnDF f -> FoldAccDF f -> GetFoldableDF f -> FoldAccDF f),
+  ( f ~ Fold dir init m acc a,
+    o ~ FoldAccDF f,
+    FoldFnDF f ~ (FoldAccFnDF f -> FoldAccDF f -> GetFoldableDF f -> FoldAccDF f),
     FoldFn f,
     FoldAccFn f,
     FoldAcc f,
     GetFoldable f
   ) =>
-  ApplyFold f
+  ApplyU (Fold dir init m acc a) o
   where
   (!>) f =
     let doFold :: FoldFnDF f = foldFn @f f

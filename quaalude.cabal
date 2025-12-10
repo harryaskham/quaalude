@@ -29,6 +29,7 @@ library
       Quaalude.Encoding.JSON
       Quaalude.Encoding.JSON.Instances
       Quaalude.Encoding.JSON.TH
+      Quaalude.Geometry
       Quaalude.Grid
       Quaalude.Lists
       Quaalude.Math

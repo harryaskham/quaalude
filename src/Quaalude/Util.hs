@@ -979,6 +979,13 @@ pairs [] = []
 pairs [_] = []
 pairs (a : b : cs) = (a, b) : pairs (b : cs)
 
+loopPairs :: [a] -> [(a, a)]
+loopPairs xs =
+  go (xs ++ [head' xs])
+  where
+    go (a : b : []) = [(a, b)]
+    go (a : b : rest) = (a, b) : go (b : rest)
+
 triPairs :: (Unable t) => t a -> [(a, a)]
 triPairs as' = let as = un as' in [(a, b) | (i, a) <- zip [0 .. length as - 2] as, (j, b) <- zip [0 ..] as, j > i]
 
