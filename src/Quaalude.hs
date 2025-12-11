@@ -77,6 +77,7 @@ import Quaalude.Megaparsec as X
 import Quaalude.Records as X
 import Quaalude.Reducible as X
 import Quaalude.Show as X
+import Quaalude.Solve as X
 import Quaalude.TH as X
 import Quaalude.Tracers as X
 import Quaalude.Tuple as X
@@ -87,3 +88,4 @@ import Relude as X hiding (drop, filter, group, many, optional, splitAt, swap, t
 import System.IO.Unsafe as X
 import Text.ParserCombinators.Parsec as X hiding (State)
 import Text.RawString.QQ as X
+import Z3.Monad as X (Z3, optimizeAssert, solverAssertAndTrack, solverAssertCnstr, solverCheckAndGetModel)

@@ -68,6 +68,7 @@ dependencies:
   - tagged
   - named
   - overhang
+  - z3
 
 default-extensions:
   - OverloadedStrings
