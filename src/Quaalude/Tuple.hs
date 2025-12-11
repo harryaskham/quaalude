@@ -35,6 +35,7 @@ type family TupConsF a as where
   TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x)
   TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y)
   TupConsF a (b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
+  TupConsF a b = (a, b)
 
 type a × b = (a, b)
 
@@ -478,33 +479,6 @@ infixl 1 &<@>
 
 dup :: a -> (a, a)
 dup a = (a, a)
-
-class Trifunctor (f :: Type -> Type -> Type -> Type) where
-  trimap :: (a -> a') -> (b -> b') -> (c -> c') -> f a b c -> f a' b' c'
-  third :: (c -> c') -> f a b c -> f a b c'
-  default third :: (c -> c') -> f a b c -> f a b c'
-  third = trimap id id
-
-instance Trifunctor (,,) where
-  trimap f g h (a, b, c) = (f a, g b, h c)
-
-three :: (Trifunctor f) => (a -> b) -> f a a a -> f b b b
-three f = trimap f f f
-
-class (Trifunctor f) => Thd f where
-  thd :: f a b c -> c
-
-instance Thd (,,) where
-  thd (_, _, c) = c
-
-class Middle f where
-  middle :: f a -> a
-
-instance Middle [] where
-  middle xs = xs L.!! (length xs `div` 2)
-
-snoc :: [a] -> (a, [a])
-snoc (x : xs) = (x, xs)
 
 instance (Num a) => Num (a, a) where
   (a, b) + (c, d) = (a + c, b + d)

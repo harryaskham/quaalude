@@ -166,6 +166,21 @@ instance {-# INCOHERENT #-} (MkableKey f, Ord k) => Convable [(k, v)] (f k v) wh
 instance {-# OVERLAPPABLE #-} (Convable a b, Convable b c) => Convable a c where
   co a = co (co a :: b)
 
+instance {-# OVERLAPPABLE #-} (Functor f, Convable a b) => Convable (f a) (f b) where
+  co = fmap co
+
+instance {-# OVERLAPPABLE #-} (Bifunctor f, Convable a c, Convable b d) => Convable (f a b) (f c d) where
+  co = bimap (co @a @c) (co @b @d)
+
+instance {-# OVERLAPPABLE #-} (Trifunctor p, Convable a d, Convable b e, Convable c f) => Convable (p a b c) (p d e f) where
+  co = trimap (co @a @d) (co @b @e) (co @c @f)
+
+instance Convable Text String where
+  co = Quaalude.Collection.unpack
+
+instance Convable String Text where
+  co = Quaalude.Collection.pack
+
 (⊏⊐) :: (Convable a c) => a -> c
 (⊏⊐) = co
 
@@ -863,3 +878,30 @@ class Transposable a where
 
 instance Transposable [[a]] where
   (⊤) = transpose
+
+class Trifunctor (f :: Type -> Type -> Type -> Type) where
+  trimap :: (a -> a') -> (b -> b') -> (c -> c') -> f a b c -> f a' b' c'
+  third :: (c -> c') -> f a b c -> f a b c'
+  default third :: (c -> c') -> f a b c -> f a b c'
+  third = trimap id id
+
+instance Trifunctor (,,) where
+  trimap f g h (a, b, c) = (f a, g b, h c)
+
+three :: (Trifunctor f) => (a -> b) -> f a a a -> f b b b
+three f = trimap f f f
+
+class (Trifunctor f) => Thd f where
+  thd :: f a b c -> c
+
+instance Thd (,,) where
+  thd (_, _, c) = c
+
+class Middle f where
+  middle :: f a -> a
+
+instance Middle [] where
+  middle xs = xs L.!! (length xs `div` 2)
+
+snoc :: [a] -> (a, [a])
+snoc (x : xs) = (x, xs)

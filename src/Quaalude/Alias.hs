@@ -5,6 +5,7 @@ import Data.Complex (Complex)
 import Data.Fin (Fin)
 import Data.Foldable qualified as F
 import Data.Type.Nat
+import GHC.TypeLits (Symbol)
 import Relude.Unsafe qualified as U
 
 -- Numeric
@@ -70,6 +71,10 @@ type ℝ² = (ℝ, ℝ)
 type ℂ = Complex ℝ
 
 type 𝔹 = Bool
+
+type 𝕊 = String
+
+type 𝕋 = Text
 
 class Inf a where
   infinity :: a

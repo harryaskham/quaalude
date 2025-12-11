@@ -33,7 +33,7 @@ import Quaalude.Collection
 import Quaalude.Coord
 import Quaalude.Tracers
 import Quaalude.Unary
-import Quaalude.Util (CanonicalParse (..), CanonicalParseF, both, bothM, enum, enumerate, unjust, (.<.), (<$$$>), (<$$>))
+import Quaalude.Util
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
 import Text.ParserCombinators.Parsec (Parser, anyChar, eof, manyTill)
@@ -580,41 +580,6 @@ instance Default DotHash where
 instance EmptyCell DotHash where
   emptyCell Dot = False
   emptyCell Hash = False
-
-class SymbolList (cs :: Symbol) l where
-  symbolList :: [Char]
-
-instance SymbolList "" '[] where
-  symbolList = []
-
-instance
-  ( SymbolList cs l,
-    ConsSymbol c cs ~ css,
-    KnownChar c
-  ) =>
-  SymbolList css ((SChar c) ': l)
-  where
-  symbolList = charVal (Proxy @c) : symbolList @cs @l
-
-type family ListToSymbol l where
-  ListToSymbol '[] = ""
-  ListToSymbol (c ': l) = ConsSymbol c (ListToSymbol l)
-
-type family SymbolToList (s :: Symbol) :: [Char] where
-  SymbolToList "" = '[]
-  SymbolToList s = SymbolToListM (UnconsSymbol s)
-
-type family SymbolToListM (s :: Maybe (Char, Symbol)) :: [Char] where
-  SymbolToListM ('Just '(c, s)) = c ': SymbolToList s
-  SymbolToListM 'Nothing = '[]
-
-type family SChars cs where
-  SChars '[] = '[]
-  SChars (c ': cs) = SChar c ': SChars cs
-
-type SymSChars s = SChars (SymbolToList s)
-
-type CharV s = V (SymSChars s)
 
 newtype Cell (cs :: Symbol) = Cell {unCell :: CharV cs}
 
