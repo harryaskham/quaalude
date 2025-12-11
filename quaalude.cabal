@@ -37,6 +37,7 @@ library
       Quaalude.Records
       Quaalude.Reducible
       Quaalude.Show
+      Quaalude.Solve
       Quaalude.TH
       Quaalude.Tracers
       Quaalude.Tuple
