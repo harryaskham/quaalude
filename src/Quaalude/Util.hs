@@ -262,6 +262,8 @@ data PairSep (sep :: Symbol) a b = PairSep a b
 
 data TupSep (sep :: Symbol) t = TupSep t
 
+data MapSep (sep :: Symbol) k v = MapSep k v
+
 data CSV a (n :: Nat) = CSV (a :^ n)
 
 type a ⹉ n = CSV a n
@@ -288,6 +290,8 @@ data WithoutChars (sym :: Symbol) t = Without t deriving (Show, Eq, Ord)
 
 type t ⊟ sym = WithoutChars sym t
 
+type AaZz = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" :: Symbol
+
 data OfChars (sym :: Symbol) t = OfChars t deriving (Show, Eq, Ord)
 
 type t ⭀ sym = OfChars sym t
@@ -303,6 +307,7 @@ type family CanonicalParseF a where
   CanonicalParseF (OfChars _ a) = a
   CanonicalParseF (PairSep _ a b) = CanonicalParseF (a, b)
   CanonicalParseF (TupSep _ t) = CanonicalParseF t
+  CanonicalParseF (MapSep _ k v) = CanonicalParseF (Map k v)
   CanonicalParseF (CSVAny a) = [CanonicalParseF a]
   CanonicalParseF (CSV a n) = CanonicalParseF (a :^ n)
   CanonicalParseF (RangeOf a) = RangeOf a
@@ -310,6 +315,7 @@ type family CanonicalParseF a where
   CanonicalParseF String = String
   CanonicalParseF Text = Text
   CanonicalParseF [a] = [CanonicalParseF a]
+  CanonicalParseF (Map k v) = Map (CanonicalParseF k) (CanonicalParseF v)
   CanonicalParseF (HList ts) = HList (CanonicalParseListF ts)
   CanonicalParseF (HListSep _ ts) = CanonicalParseF (HList ts)
   CanonicalParseF (Solo a) = (Solo (CanonicalParseF a))
@@ -409,7 +415,7 @@ instance (CanonicalParse a) => CanonicalParse (CSVAny a) where
 
 instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
   parseCanonical = do
-    xs <- many1 (try (parseCanonical @a) <* eol)
+    xs <- many1 (try (parseCanonical @a) <* optionMaybe eol)
     case nonEmpty xs of
       Nothing -> fail "Expected non-empty list"
       Just ne -> return ne
@@ -448,6 +454,14 @@ instance (CanonicalParse (𝕊 ⊟ sym)) => CanonicalParse (𝕋 ⊟ sym) where
 
 instance (KnownSymbol sym) => CanonicalParse (𝕋 ⭀ sym) where
   parseCanonical = pack <$> parseCanonical @(𝕊 ⭀ sym)
+
+instance (CanonicalParse k, CanonicalParse v, Ord (CanonicalParseF k)) => CanonicalParse (Map k v) where
+  parseCanonical = mkMap . un <$> parseCanonical @(NonEmpty (k, v))
+
+instance (CanonicalParse k, CanonicalParse v, Ord (CanonicalParseF k), KnownSymbol sep) => CanonicalParse (MapSep sep k v) where
+  parseCanonical = do
+    kvs <- parseCanonical @(NonEmpty (TupSep sep (k, v)))
+    return $ mkMap (un kvs)
 
 class (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a where
   parseCanonicalSelf :: Parser a
