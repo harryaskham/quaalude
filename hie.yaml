@@ -2,3 +2,6 @@ cradle:
   cabal:
     - path: "./src"
       component: "lib:quaalude"
+
+    - path: "./test"
+      component: "quaalude:test:quaalude-tests"

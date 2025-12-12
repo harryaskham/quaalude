@@ -171,3 +171,136 @@ library
     , relude (Relude as Prelude, Relude.Unsafe)
     , relude 
   default-language: Haskell2010
+
+test-suite quaalude-tests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Quaalude.Test.Spec
+      Paths_quaalude
+  autogen-modules:
+      Paths_quaalude
+  hs-source-dirs:
+      test
+  default-extensions:
+      OverloadedStrings
+      OverloadedLabels
+      TupleSections
+      ViewPatterns
+      StandaloneKindSignatures
+      DerivingVia
+      LambdaCase
+      MultiWayIf
+      QuantifiedConstraints
+      ConstraintKinds
+      MonadComprehensions
+      UnicodeSyntax
+      BlockArguments
+      TypeFamilyDependencies
+      ImportQualifiedPost
+      EmptyCase
+      StarIsType
+      PostfixOperators
+      FlexibleContexts
+      FlexibleInstances
+      InstanceSigs
+      MultiParamTypeClasses
+      UndecidableInstances
+      QuasiQuotes
+      NamedFieldPuns
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveAnyClass
+      DeriveTraversable
+      DerivingStrategies
+      GeneralizedNewtypeDeriving
+      StandaloneDeriving
+      ScopedTypeVariables
+      RankNTypes
+      TypeApplications
+      TypeOperators
+      TypeFamilies
+      ApplicativeDo
+      DefaultSignatures
+      PatternSynonyms
+      ExistentialQuantification
+      FunctionalDependencies
+      GADTs
+      DataKinds
+      PolyKinds
+      StrictData
+      TemplateHaskell
+      RecordWildCards
+      NamedWildCards
+      PartialTypeSignatures
+      AllowAmbiguousTypes
+      ImpredicativeTypes
+      UndecidableSuperClasses
+  ghc-options: -fprint-potential-instances -Weverything -Wno-unrecognised-warning-flags -Wno-star-is-type -Wno-missing-signatures -Wno-orphans -Wno-implicit-prelude -Wno-unused-imports -Wno-unused-packages -Wno-missing-kind-signatures -Wno-missing-poly-kind-signatures -Wno-term-variable-capture -Wno-missing-export-lists -Wno-missing-deriving-strategies -Wno-missing-safe-haskell-mode -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-deriving-defaults -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-missing-home-modules -Wno-name-shadowing -Wno-type-defaults -Wno-incomplete-patterns -Wno-incomplete-uni-patterns -Wno-prepositive-qualified-module -Wno-missing-role-annotations -Wno-operator-whitespace -Wno-unused-do-bind
+  build-depends:
+      HList
+    , MissingH
+    , MonadRandom
+    , OneTuple
+    , aeson
+    , aeson-casing
+    , aeson-gadt-th
+    , ansi-terminal
+    , array
+    , barbies
+    , base >=4.19.0.0
+    , benchpress
+    , bifunctors
+    , bimap
+    , binary-search
+    , bitwise
+    , bytestring
+    , containers
+    , data-default
+    , dependent-sum-template
+    , deriving-aeson
+    , distributive
+    , extra
+    , file-embed
+    , fin
+    , groupBy
+    , hashable
+    , hspec
+    , lens
+    , linear
+    , megaparsec
+    , mod
+    , monad-memo
+    , mtl
+    , named
+    , overhang
+    , parsec
+    , pqueue
+    , quaalude
+    , random
+    , random-shuffle
+    , raw-strings-qq
+    , relude
+    , replace-megaparsec
+    , req
+    , safe
+    , semirings
+    , some
+    , split
+    , string-qq
+    , tagged
+    , template-haskell
+    , text
+    , unordered-containers
+    , utility-ht
+    , variant
+    , vector
+    , vector-space
+    , z3
+  mixins:
+      base hiding (Prelude)
+    , relude (Relude as Prelude, Relude.Unsafe)
+    , relude 
+  default-language: Haskell2010

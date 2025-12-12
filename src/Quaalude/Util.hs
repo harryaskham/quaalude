@@ -36,6 +36,7 @@ import Overhang qualified as OH
 import Quaalude.Alias
 import Quaalude.Bits (bitsToInt)
 import Quaalude.Collection
+import Quaalude.Tracers
 import Quaalude.Tuple
 import Quaalude.Unary
 import Relude.Unsafe qualified as U
@@ -262,6 +263,16 @@ data PairSep (sep :: Symbol) a b = PairSep a b
 
 data TupSep (sep :: Symbol) t = TupSep t
 
+type family t ⯻ (sep :: Symbol) where
+  (a, b) ⯻ sep = TupSep sep (a, b)
+  (a, b, c) ⯻ sep = TupSep sep (a, b, c)
+  (a, b, c, d) ⯻ sep = TupSep sep (a, b, c, d)
+  (a, b, c, d, e) ⯻ sep = TupSep sep (a, b, c, d, e)
+  (a, b, c, d, e, f) ⯻ sep = TupSep sep (a, b, c, d, e, f)
+  [a] ⯻ sep = SepByMany sep a
+
+data LinesSep (sep :: Symbol) a = LinesSep a
+
 data MapSep (sep :: Symbol) k v = MapSep k v
 
 data CSV a (n :: Nat) = CSV (a :^ n)
@@ -286,11 +297,17 @@ data ℕc = ℕc (Maybe Char) deriving (Eq, Ord, Show)
 unℕc :: ℕc -> Maybe Char
 unℕc (ℕc c) = c
 
+data Exactly (sym :: Symbol) = Exactly deriving (Show, Eq, Ord)
+
 data WithoutChars (sym :: Symbol) t = Without t deriving (Show, Eq, Ord)
 
 type t ⊟ sym = WithoutChars sym t
 
 type AaZz = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" :: Symbol
+
+type Whitespace = " \t\n\r" :: Symbol
+
+type EOLs = "\n\r" :: Symbol
 
 data OfChars (sym :: Symbol) t = OfChars t deriving (Show, Eq, Ord)
 
@@ -303,10 +320,12 @@ type family CanonicalParseListF (a :: [*]) where
 type family CanonicalParseF a where
   CanonicalParseF (SepByMany _ a) = CanonicalParseF [a]
   CanonicalParseF (Between _ _ a) = CanonicalParseF a
+  CanonicalParseF (Exactly _) = String
   CanonicalParseF (WithoutChars _ a) = a
   CanonicalParseF (OfChars _ a) = a
   CanonicalParseF (PairSep _ a b) = CanonicalParseF (a, b)
   CanonicalParseF (TupSep _ t) = CanonicalParseF t
+  CanonicalParseF (LinesSep _ a) = CanonicalParseF [a]
   CanonicalParseF (MapSep _ k v) = CanonicalParseF (Map k v)
   CanonicalParseF (CSVAny a) = [CanonicalParseF a]
   CanonicalParseF (CSV a n) = CanonicalParseF (a :^ n)
@@ -329,59 +348,83 @@ class CanonicalParse a where
   parseCanonical :: Parser (CanonicalParseF a)
 
 instance CanonicalParse () where
-  parseCanonical = pure ()
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      pure ()
 
 instance CanonicalParse Integer where
-  parseCanonical = number
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      number
 
 instance CanonicalParse Natural where
-  parseCanonical = natural
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      natural
 
 instance CanonicalParse ℕw where
-  parseCanonical = do
-    n <- many1 (oneOf "0123456789")
-    pure $ ℕw n (U.read n)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      do
+        n <- many1 (oneOf "0123456789")
+        pure $ ℕw n (U.read n)
 
 instance CanonicalParse ℕc where
-  parseCanonical = do
-    c <- (Just <$> (try (oneOf "0123456789"))) <|> pure Nothing
-    pure $ ℕc c
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      do
+        c <- (Just <$> (try (oneOf "0123456789"))) <|> pure Nothing
+        pure $ ℕc c
 
 instance CanonicalParse (Integer -> Integer -> Integer) where
-  parseCanonical = mathOp
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      mathOp
 
 instance CanonicalParse (Natural -> Natural -> Natural) where
-  parseCanonical = mathOp
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      mathOp
 
 instance (Read a) => CanonicalParse (RangeOf a) where
-  parseCanonical = natRange Incl
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      natRange Incl
 
 instance (CanonicalParse a, CanonicalParseF [a] ~ [CanonicalParseF a], KnownSymbol sep) => CanonicalParse (SepByMany sep a) where
   parseCanonical =
-    do
-      let seps = many1 (oneOf (symbolVal (Proxy @sep)))
-      many1 ((try (optionMaybe seps) *> try (parseCanonical @a) <* try (optionMaybe seps)))
+    traceCanonical "parseCanonical" $
+      do
+        let seps = many1 (oneOf (symbolVal (Proxy @sep)))
+        many1 ((try (optionMaybe seps) *> try (parseCanonical @a) <* try (optionMaybe seps)))
 
 instance (CanonicalParse a, KnownSymbol l, KnownSymbol r) => CanonicalParse (Between l r a) where
-  parseCanonical = between (string (symbolVal (Proxy @l))) (string (symbolVal (Proxy @r))) (try (parseCanonical @a))
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      between (parseCanonical @(Exactly l)) (parseCanonical @(Exactly r)) (try (parseCanonical @a))
 
 instance (CanonicalParse a, CanonicalParse b, KnownSymbol sep) => CanonicalParse (PairSep sep a b) where
-  parseCanonical = do
-    a <- parseCanonical @a <* string (symbolVal (Proxy @sep))
-    b <- parseCanonical @b
-    return (a, b)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      do
+        a <- parseCanonical @a <* parseCanonical @(Exactly sep)
+        b <- parseCanonical @b
+        return (a, b)
 
 instance CanonicalParse (HListSep sep '[]) where
-  parseCanonical = pure HNil
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      pure HNil
 
 instance
   (CanonicalParse t) =>
   CanonicalParse (HListSep sep '[t])
   where
   parseCanonical =
-    (.*.)
-      <$> parseCanonical @t
-      <*> pure HNil
+    traceCanonical "parseCanonical" $
+      (.*.)
+        <$> parseCanonical @t
+        <*> pure HNil
 
 instance
   ( CanonicalParse (HListSep sep (u ': ts)),
@@ -391,34 +434,54 @@ instance
   CanonicalParse (HListSep sep (t ': u ': ts))
   where
   parseCanonical =
-    (.*.)
-      <$> parseCanonical @t
-      <*> (try (optionMaybe (string (symbolVal (Proxy @sep)))) *> parseCanonical @(HListSep sep (u ': ts)))
+    traceCanonical "parseCanonical" $
+      (.*.)
+        <$> parseCanonical @t
+        <*> (try (optionMaybe (string (symbolVal (Proxy @sep)))) *> parseCanonical @(HListSep sep (u ': ts)))
 
 instance
-  ( List2Tup (CanonicalParseListF (Tup2ListF t)),
-    List2TupF (CanonicalParseListF (Tup2ListF t)) ~ CanonicalParseF t,
-    CanonicalParse (HListSep sep (Tup2ListF t))
+  ( Tup2ListF t ~ l,
+    l ~ (head ': tail),
+    pl ~ CanonicalParseListF l,
+    List2Tup pl,
+    List2TupF pl ~ CanonicalParseF t,
+    CanonicalParse (HListSep sep l),
+    CanonicalParseF (HListSep sep l) ~ HList pl,
+    KnownSymbol sep
   ) =>
   CanonicalParse (TupSep sep t)
   where
-  parseCanonical = list2Tup <$> parseCanonical @(HListSep sep (Tup2ListF t))
+  parseCanonical =
+    traceCanonical ("TupSep " <> symbolVal (Proxy @sep) <> " t") $
+      list2Tup <$> parseCanonical @(HListSep sep l)
 
 instance
   (CanonicalParse (TupSep "," (a :^ n))) =>
   CanonicalParse (CSV a n)
   where
-  parseCanonical = parseCanonical @(TupSep "," (a :^ n))
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      parseCanonical @(TupSep "," (a :^ n))
 
 instance (CanonicalParse a) => CanonicalParse (CSVAny a) where
-  parseCanonical = (try (parseCanonical @a)) `sepBy` char ','
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      (try (parseCanonical @a)) `sepBy` char ','
+
+instance (KnownSymbol sep, CanonicalParse a, CanonicalParseF [a] ~ [CanonicalParseF a]) => CanonicalParse (LinesSep sep a) where
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      ((try (parseCanonical @a)) <* many (optionMaybe eol))
+        `sepBy1` (try (parseCanonical @(Exactly sep)))
 
 instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
-  parseCanonical = do
-    xs <- many1 (try (parseCanonical @a) <* optionMaybe eol)
-    case nonEmpty xs of
-      Nothing -> fail "Expected non-empty list"
-      Just ne -> return ne
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      try do
+        xs <- try $ many1 (try (parseCanonical @a <* eol))
+        case nonEmpty xs of
+          Nothing -> fail "Expected non-empty list"
+          Just ne -> return ne
 
 -- instance
 --   {-# OVERLAPS #-}
@@ -432,40 +495,67 @@ instance (CanonicalParse a) => CanonicalParse (NonEmpty a) where
 --   parseCanonical = bipure @p <$> parseCanonical @a <*> parseCanonical @b
 
 instance {-# OVERLAPS #-} (CanonicalParse a, CanonicalParseF [a] ~ [CanonicalParseF a]) => CanonicalParse [a] where
-  parseCanonical = parseCanonical @(SepByMany " " a)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      parseCanonical @(SepByMany " " a)
 
 instance {-# OVERLAPS #-} (CanonicalParse [a]) => CanonicalParse [[a]] where
-  parseCanonical = many1 (parseCanonical @[a])
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      many1 (parseCanonical @[a])
+
+instance (KnownSymbol sym) => CanonicalParse (Exactly sym) where
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      string (symbolVal (Proxy @sym))
 
 instance CanonicalParse Char where
-  parseCanonical = noneOf "\n"
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      noneOf "\n"
 
 instance (KnownSymbol sym) => CanonicalParse (𝕊 ⊟ sym) where
-  parseCanonical = many1 (noneOf ("\n" <> symbolVal (Proxy @sym)))
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      many1 (noneOf ("\n" <> symbolVal (Proxy @sym)))
 
 instance (KnownSymbol sym) => CanonicalParse (𝕊 ⭀ sym) where
-  parseCanonical = many1 (oneOf (symbolVal (Proxy @sym)))
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      many1 (oneOf (symbolVal (Proxy @sym)))
 
 instance CanonicalParse 𝕋 where
-  parseCanonical = pack <$> parseCanonical @𝕊
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      pack <$> parseCanonical @𝕊
 
 instance (CanonicalParse (𝕊 ⊟ sym)) => CanonicalParse (𝕋 ⊟ sym) where
-  parseCanonical = pack <$> parseCanonical @(𝕊 ⊟ sym)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      pack <$> parseCanonical @(𝕊 ⊟ sym)
 
 instance (KnownSymbol sym) => CanonicalParse (𝕋 ⭀ sym) where
-  parseCanonical = pack <$> parseCanonical @(𝕊 ⭀ sym)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      pack <$> parseCanonical @(𝕊 ⭀ sym)
 
 instance (CanonicalParse k, CanonicalParse v, Ord (CanonicalParseF k)) => CanonicalParse (Map k v) where
-  parseCanonical = mkMap . un <$> parseCanonical @(NonEmpty (k, v))
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      mkMap . un <$> parseCanonical @(NonEmpty (k, v))
 
 instance (CanonicalParse k, CanonicalParse v, Ord (CanonicalParseF k), KnownSymbol sep) => CanonicalParse (MapSep sep k v) where
-  parseCanonical = do
-    kvs <- parseCanonical @(NonEmpty (TupSep sep (k, v)))
-    return $ mkMap (un kvs)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      do
+        kvs <- parseCanonical @(NonEmpty (TupSep sep (k, v)))
+        return $ mkMap (un kvs)
 
 class (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a where
   parseCanonicalSelf :: Parser a
-  parseCanonicalSelf = parseCanonical @a
+  parseCanonicalSelf =
+    traceCanonical "parseCanonical" $
+      parseCanonical @a
 
 instance (CanonicalParse a, a ~ CanonicalParseF a) => CanonicalParseSelf a
 
@@ -478,8 +568,9 @@ class
   where
   parseCanonicalTuple :: Parser (CanonicalParseF t)
   parseCanonicalTuple =
-    list2Tup @(CanonicalTupleL t)
-      <$> parseCanonicalSelf @(HList (CanonicalTupleL t))
+    traceCanonical "parseCanonical" $
+      list2Tup @(CanonicalTupleL t)
+        <$> parseCanonicalSelf @(HList (CanonicalTupleL t))
 
 instance
   ( CanonicalParseSelf (HList (CanonicalTupleL t)),
@@ -506,7 +597,9 @@ instance
   ) =>
   CanonicalParse (a, b)
   where
-  parseCanonical = (,) <$> parseCanonical @a <*> parseCanonical @b
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      (,) <$> parseCanonical @a <*> parseCanonical @b
 
 -- instance (CanonicalParseTup (a, b, c)) => CanonicalParse (a, b, c) where
 instance
@@ -516,10 +609,14 @@ instance
   ) =>
   CanonicalParse (a, b, c)
   where
-  parseCanonical = (,,) <$> parseCanonical @a <*> parseCanonical @b <*> parseCanonical @c -- parseCanonicalTuple @(a, b, c)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      (,,) <$> parseCanonical @a <*> parseCanonical @b <*> parseCanonical @c -- parseCanonicalTuple @(a, b, c)
 
 instance CanonicalParse (HList '[]) where
-  parseCanonical = pure HNil
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      pure HNil
 
 instance
   ( CanonicalParse t,
@@ -527,21 +624,25 @@ instance
   ) =>
   CanonicalParse (HList (t ': ts))
   where
-  parseCanonical = (.*.) <$> parseCanonical @t <*> parseCanonicalSelf @(HList ts)
+  parseCanonical =
+    traceCanonical "parseCanonical" $
+      (.*.) <$> parseCanonical @t <*> parseCanonicalSelf @(HList ts)
 
 (⋯) :: (CanonicalParseSelf a) => String -> a
 (⋯) = (|- parseCanonicalSelf)
 
+traceCanonical = ptrace' False
+
 class (CanonicalParse v) => CanonicalParseVia v a where
   parseVia :: Parser a
   default parseVia :: (CanonicalParseF v ~ a) => Parser a
-  parseVia = parseCanonical @v
+  parseVia = traceCanonical "parseCanonical" $ parseCanonical @v
 
   (⋮) :: (CanonicalParseF v ~ a, CanonicalParse v) => String -> a
   (⋮) s = s |- parseVia @v @a
 
-  (⊏|⊐) :: forall {b}. (CanonicalParseF v ~ b, Convable b a) => String -> a
-  (⊏|⊐) s = let b = ((⋮) @v @b s) in (b ⊏⊐)
+(⊏|⊐) :: forall v {a}. (CanonicalParse v, (Convable (CanonicalParseF v) a)) => String -> a
+(⊏|⊐) s = (((⋮) @v s) ⊏⊐)
 
 (⋮⊏) :: forall {f} {x} v. (CanonicalParseVia v (f x), CanonicalParseF v ~ f x, Unable f) => String -> [x]
 (⋮⊏) s = let fx :: f x = ((⋮) @v @(f x) s) in (fx & (⊏) @f)
@@ -802,8 +903,6 @@ f &<$>& g = fbiap . bimap f g
 infixl 0 &<$>
 
 f &=<<& g = fbibind . bimap f g
-
-(a, b) ⤊ f = zipWith f a b
 
 (⇄) = flip flip
 
@@ -1294,6 +1393,14 @@ instance
   SymbolList css ((SChar c) ': l)
   where
   symbolList = charVal (Proxy @c) : symbolList @cs @l
+
+symbolHead ::
+  forall css c cs.
+  ( ConsSymbol c cs ~ css,
+    KnownChar c
+  ) =>
+  Maybe Char
+symbolHead = Just (charVal (Proxy @c))
 
 type family ListToSymbol l where
   ListToSymbol '[] = ""

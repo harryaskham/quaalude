@@ -36,7 +36,7 @@ import Quaalude.Unary
 import Quaalude.Util
 import Relude.Unsafe qualified as U
 import System.IO.Unsafe (unsafePerformIO)
-import Text.ParserCombinators.Parsec (Parser, anyChar, eof, manyTill)
+import Text.ParserCombinators.Parsec (Parser, anyChar, endBy1, eof, many1, manyTill, noneOf)
 import Text.Show qualified as TS
 import Prelude hiding (filter, swap)
 
@@ -583,11 +583,23 @@ instance EmptyCell DotHash where
 
 newtype Cell (cs :: Symbol) = Cell {unCell :: CharV cs}
 
+instance Semigroup (Cell cs) where
+  ca <> cb = cb
+
+instance
+  ( SChar c :< SymSChars css,
+    KnownChar c,
+    css ~ ConsSymbol c cs
+  ) =>
+  Monoid (Cell css)
+  where
+  mempty = mkC @c
+
 instance
   (GridCell (Cell cs)) =>
   Convable (Cell cs) Char
   where
-  co = toChar @(Cell cs)
+  co = toChar @(Cell cs) ∘ traceCo "(Cell cs) Char"
 
 mkC ::
   forall {cs} c.
@@ -1080,21 +1092,13 @@ x_x :: (Eq k, Griddable Identity g k Char, GridUnionable (g k) Char) => g k Char
 x_x = wildEq '_'
 
 instance Unable (Grid' k) where
-  un (Grid g) = un g
+  un (Grid g) = traceUn "Grid' k" $ un g
 
 instance Convable (Grid' k a) (Map k a) where
-  co (Grid g) = g
-
-instance
-  ( Semigroup (m k),
-    SwapWithable Map m k a
-  ) =>
-  Convable (Map k a) (Map a (m k))
-  where
-  co = swapcat
+  co (Grid g) = traceCo "(Grid' k a) (Map k a)" $ g
 
 instance (Ord a, Ord k) => Convable (Grid' k a) (Map a [k]) where
-  co = swapcat . co @(Grid' k a) @(Map k a)
+  co = swapcat . co @(Grid' k a) @(Map k a) ∘ traceCo "(Grid' k a) (Map a [k])"
 
 type cs ▦ k = G k (Cell cs)
 
@@ -1103,8 +1107,8 @@ gridParseCanonical ::
   (Griddable Identity g (CanonicalParseF k) (CanonicalParseF a)) =>
   Parser (g (CanonicalParseF k) (CanonicalParseF a))
 gridParseCanonical = do
-  s <- manyTill anyChar eof
-  return $ readGrid (T.pack s)
+  s <- (many1 (noneOf "\n")) `endBy1` eol
+  return $ readGrid (unlines $ T.pack <$> s)
 
 instance (Griddable Identity ListGrid' (CanonicalParseF k) (CanonicalParseF a)) => CanonicalParse (ListGrid' k a) where
   parseCanonical = gridParseCanonical @ListGrid' @k @a

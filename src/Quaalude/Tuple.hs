@@ -4,7 +4,9 @@ import Data.HList
 import Data.List qualified as L
 import Data.Tuple.Solo
 import GHC.TypeLits
+import Quaalude.Alias
 import Quaalude.Collection
+import Quaalude.Lists
 import Text.Parsec
 import Prelude hiding (natVal)
 
@@ -391,7 +393,8 @@ type family List2TupF a where
   List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x)
   List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y)
   List2TupF '[a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z] = (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
-  List2TupF e = TypeError ('Text "List2TupF: " ':<>: 'ShowType e)
+
+-- List2TupF e = TypeError ('Text "List2TupF: " ':<>: 'ShowType e)
 
 class Tup2List t h where
   tup2List :: t -> HList h
@@ -604,7 +607,6 @@ homTup p = do
 tuple ::
   forall n a t s u m tok.
   ( KnownNat n,
-    MkHomTup n [a] (HomTup n a),
     Stream s m tok,
     ToTup n (HomTup n a) t,
     t ~ ToTupF (HomTup n a)
@@ -625,8 +627,82 @@ instance (Eq a) => Memberable a (HomTup n a) where
 instance (Eq a) => Memberable a (Solo a) where
   a ∈ MkSolo a' = a == a'
 
--- instance (Eq a, Memberable a (Solo a)) => Memberable a (a, a) where
---   a ∈ t = let (a', t') = tupSnoc @(a, a) @a @(Solo a) t in a == a' || ((∈) @a @(Solo a) a t')
-
 instance {-# OVERLAPS #-} (Eq a, Memberable a t, f a t ~ TupConsF a t, TupSnoc (f a t) a t, TupSnocF (f a t) ~ (a, t)) => Memberable a (f a t) where
   a ∈ fat = let (a', t) = tupSnoc @(f a t) @a @t fat in a == a' || ((∈) @a @t a t)
+
+-- instance {-# OVERLAPPING #-} Convable () (HomList 0 a) where
+--   co _ =
+--     traceCo "() (HomList n a)" $
+--       HomNil
+--
+-- instance {-# OVERLAPPING #-} (Convable t' (HomList (n - 1) a), (a, t') ~ TupSnocF t, TupSnoc t a t') => Convable t (HomList n a) where
+--   co t =
+--     traceCo "t (HomList n a)" $
+--       let (a, t') = tupSnoc @t @a @t' t in HomCons a (co @t' @(HomList (n - 1) a) t')
+--
+-- instance {-# OVERLAPPING #-} Convable (HomList 0 a) () where
+--   co HomNil = traceCo "(HomList n a) ()" $ ()
+--
+-- instance {-# OVERLAPPING #-} (Convable (HomList (n - 1) a) t', t ~ TupConsF a t', TupCons a t' t) => Convable (HomList n a) t where
+--   co (HomCons a as) =
+--     traceCo "(HomList n a) t" $
+--       tupCons @a @t' @t a (co @(HomList (n - 1) a) @t' as)
+
+instance Mkable Solo a where
+  mk [a] = MkSolo a & traceMk "Solo"
+
+instance Mkable ((,) a) a where
+  mk [a, b] = (a, b) & traceMk "(,)"
+
+instance Mkable ((,,) a a) a where
+  mk [a, b, c] = (a, b, c) & traceMk "(,,)"
+
+instance Mkable ((,,,) a a a) a where
+  mk [a, b, c, d] = (a, b, c, d) & traceMk "(,,)"
+
+instance Unable Solo where
+  un (MkSolo a) = [a] & traceUn "Solo"
+
+instance {-# OVERLAPPING #-} Convable [a] () where
+  co [] = traceCo "[a] ()" $ ()
+  co _ = error "Convable: list length mismatch for []/(,)"
+
+instance {-# OVERLAPPING #-} Convable [a] (Solo a) where
+  co [a] = traceCo "[a] (Solo a)" $ (MkSolo a)
+  co _ = error "Convable: list length mismatch for []/(,)"
+
+instance {-# OVERLAPPING #-} Convable [a] (a, a) where
+  co = mk ∘ traceCo "[a] (a, a)"
+
+instance {-# OVERLAPPING #-} Convable [a] (a, a, a) where
+  co = mk ∘ traceCo "[a] (a, a, a)"
+
+instance {-# OVERLAPPING #-} Convable [a] (a, a, a, a) where
+  co = mk ∘ traceCo "[a] (a, a, a, a)"
+
+instance {-# OVERLAPPING #-} Convable () [a] where
+  co () = traceCo "() [a]" $ []
+
+instance {-# OVERLAPPING #-} Convable (Solo a) [a] where
+  co (MkSolo a) = traceCo "(Solo a) [a]" $ [a]
+
+instance {-# OVERLAPPING #-} Convable (a, a) [a] where
+  co (a, b) = traceCo "(a, a) [a]" $ [a, b]
+
+instance {-# OVERLAPPING #-} Convable (a, a, a) [a] where
+  co (a, b, c) = traceCo "(a, a, a) [a]" $ [a, b, c]
+
+instance {-# OVERLAPPING #-} Convable (a, a, a, a) [a] where
+  co (a, b, c, d) = traceCo "(a, a, a, a) [a]" $ [a, b, c, d]
+
+instance {-# OVERLAPPING #-} (Convable a a') => Convable (Solo a) (Solo a') where
+  co (MkSolo a) = traceCo "(Solo a) (Solo a')" $ Solo (co a)
+
+instance {-# OVERLAPPING #-} (Convable a a', Convable b b') => Convable (a, b) (a', b') where
+  co (a, b) = traceCo "(a, b) (a', b')" $ (co a, co b)
+
+instance {-# OVERLAPPING #-} (Convable a a', Convable b b', Convable c c') => Convable (a, b, c) (a', b', c') where
+  co (a, b, c) = traceCo "(a, b, c) (a', b', c')" $ (co a, co b, co c)
+
+instance {-# OVERLAPPING #-} (Convable a a', Convable b b', Convable c c', Convable d d') => Convable (a, b, c, d) (a', b', c', d') where
+  co (a, b, c, d) = traceCo "(a, b, c, d) (a', b', c', d')" $ (co a, co b, co c, co d)

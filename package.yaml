@@ -164,3 +164,11 @@ ghc-options:
 
 library:
   source-dirs: src
+
+tests:
+  quaalude-tests:
+    dependencies:
+      - quaalude
+      - hspec
+    main: Spec.hs
+    source-dirs: test

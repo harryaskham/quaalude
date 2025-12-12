@@ -78,3 +78,6 @@ traceStack msg a = Trace.traceStack (T.unpack msg) a
 
 traceStackId :: a -> a
 traceStackId = traceStack ""
+
+traceIf :: Bool -> String -> a -> a
+traceIf b s = if b then traceShow s else id

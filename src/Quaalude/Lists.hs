@@ -3,6 +3,7 @@ module Quaalude.Lists where
 import Data.HList
 import GHC.TypeNats
 import Quaalude.Alias
+import Quaalude.Collection
 
 class Nothings l where
   nothings :: HList l
@@ -37,7 +38,7 @@ class (HomConsEvidenceC (HomConsEvidenceT (SNat n, a))) => HomConsEvidence n a
 instance (HomConsEvidenceC (HomConsEvidenceT (SNat n, a))) => HomConsEvidence n a
 
 type family HomConsLHS b where
-  HomConsLHS (HomList n a) = a
+  HomConsLHS (HomList _ a) = a
   HomConsLHS a = a
 
 class (n ~ (n + 1 - 1)) => NatSuccPred n
@@ -65,7 +66,7 @@ class ConstC (cf :: (k -> Constraint)) (a :: k)
 instance (cf a) => ConstC cf a
 
 type family AllEqF a :: * -> Constraint where
-  AllEqF (HomList n a) = ConstC AllEq
+  AllEqF (HomList _ _) = ConstC AllEq
 
 type family a :≡ b where
   a :≡ () = Question AllEq (HomList 1 a)
@@ -81,7 +82,7 @@ instance {-# OVERLAPS #-} AllEq (HomList 0 a) where
 
 instance {-# OVERLAPS #-} (Eq a, AllEq (HomList (n - 1) a)) => AllEq (HomList n a) where
   allEq (HomCons a rest@(HomCons b _)) = a ≡ b ∧ allEq @(HomList (n - 1) a) rest
-  allEq (HomCons a HomNil) = True
+  allEq (HomCons _ HomNil) = True
 
 type family QuestionResultF c where
   QuestionResultF AllEq = Bool
@@ -94,3 +95,9 @@ type family RunQuestionF q where
 
 class RunQuestion q where
   runQuestion :: (RunQuestionC q) => RunQuestionF q
+
+instance Unable (HomList 0) where
+  un HomNil = traceUn "HomList 0" $ []
+
+instance (Unable (HomList (n - 1))) => Unable (HomList n) where
+  un (HomCons a as) = traceUn "HomList n" $ a : un as

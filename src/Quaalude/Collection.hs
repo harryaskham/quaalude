@@ -23,11 +23,22 @@ import Data.PQueue.Prio.Min qualified as PQ
 import Data.Sequence qualified as SQ
 import Data.Set qualified as S
 import Data.Text qualified as T
+import Data.Vector (Vector)
 import Data.Vector qualified as V
 import Quaalude.Alias
+import Quaalude.Tracers
 import Quaalude.Unary
 import Relude.Unsafe qualified as U
 import Prelude hiding (drop, filter, splitAt, take)
+
+traceMk :: String -> a -> a
+traceMk s = traceIf False $ "mk: " <> s
+
+traceUn :: String -> a -> a
+traceUn s = traceIf False $ "un: " <> s
+
+traceCo :: String -> a -> a
+traceCo s = traceIf False $ "co: " <> s
 
 class Packable a b where
   pack :: a -> b
@@ -59,19 +70,19 @@ class Mkable f a where
   mk :: [a] -> f a
 
 instance Mkable [] a where
-  mk = id
+  mk = id ∘ traceMk "[] a"
 
 instance Mkable NonEmpty a where
-  mk (a : as) = a :| as
+  mk (a : as) = traceMk "NonEmpty a" $ a :| as
 
 instance Mkable V.Vector a where
-  mk = mkVec
+  mk = mkVec ∘ traceMk "Vector a"
 
 instance Mkable Seq a where
-  mk = mkSeq
+  mk = mkSeq ∘ traceMk "Seq a"
 
 instance (Ord a) => Mkable Set a where
-  mk = mkSet
+  mk = mkSet ∘ traceMk "Set a"
 
 pattern Seq₁ :: a -> Seq a
 pattern Seq₁ a = a SQ.:<| SQ.Empty
@@ -98,22 +109,22 @@ class Unable f where
   un :: f a -> [a]
 
 instance Unable [] where
-  un = id
+  un = id ∘ traceUn "[]"
 
 instance Unable NonEmpty where
-  un (a :| as) = a : as
+  un (a :| as) = traceUn "NonEmpty" $ a : as
 
 instance Unable V.Vector where
-  un = unVec
+  un = unVec ∘ traceUn "Vector"
 
 instance Unable Set where
-  un = unSet
+  un = unSet ∘ traceUn "Set"
 
 instance Unable (Map k) where
-  un = fmap snd . unMap
+  un = fmap snd ∘ unMap ∘ traceUn "Map"
 
 instance Unable Seq where
-  un = unSeq
+  un = unSeq ∘ traceUn "Seq"
 
 class UnableKey f where
   unKey :: f k v -> [(k, v)]
@@ -124,62 +135,77 @@ instance UnableKey Map where
 instance UnableKey BM.Bimap where
   unKey = unBimap
 
+coMk :: (Mkable f y, a ~ [x], Convable x y, c ~ f y) => a -> c
+coMk = mk ∘ fmap co ∘ traceCo "default via id"
+
 class Convable a c where
   co :: a -> c
+  default co :: (Mkable f y, a ~ [x], Convable x y, c ~ f y) => a -> c
+  co = coMk
 
-instance (Convable a b, Convable c d) => Convable (a, c) (b, d) where
-  co (a, c) = (co a, co c)
+-- instance {-# INCOHERENT #-} Convable a [a] where
+--  co = pure ∘ traceCo "a [a]"
 
-instance {-# INCOHERENT #-} Convable a [a] where
-  co = pure
+-- instance {-# INCOHERENT #-} (Unable f, Convable [a] b) => Convable (f a) b where
+--   co = co . un ∘ traceCo "(f a) b"
 
-instance {-# INCOHERENT #-} (Unable f, Convable [a] b) => Convable (f a) b where
-  co = co . un
+instance {-# OVERLAPS #-} (a ~ a') => Convable a a' where
+  co = id ∘ traceCo "a a"
 
-instance {-# INCOHERENT #-} (Ord b, Convable a [b]) => Convable a (Set b) where
-  co = mkOrd . co
+instance {-# OVERLAPS #-} (Convable a b, Unable f) => Convable (f a) [b] where
+  co = fmap co ∘ un ∘ traceCo "(f a) [b]"
 
-instance {-# INCOHERENT #-} (Ord k) => Convable [(k, v)] (Map k v) where
-  co = mkMap
+-- instance {-# OVERLAPPING #-} (Bifunctor f, Convable a c, Convable b d) => Convable (f a b) (f c d) where
+--   co = bimap (co @a @c) (co @b @d) ∘ traceCo "(f a b) (f c d)"
+--
+-- instance {-# OVERLAPPING #-} (Trifunctor p, Convable a d, Convable b e, Convable c f) => Convable (p a b c) (p d e f) where
+--   co = trimap (co @a @d) (co @b @e) (co @c @f) ∘ traceCo "(p a b c) (p d e f)"
 
-instance {-# INCOHERENT #-} (Unable f) => Convable (f a) [a] where
-  co = un
+instance {-# OVERLAPPING #-} (Ord a', Convable [a] [a']) => Convable [a] (Set a') where
+  co = mkSet . co @[a] @[a'] ∘ traceCo "[a] (Set a')"
 
-instance {-# INCOHERENT #-} (UnableKey f) => Convable (f k v) [(k, v)] where
-  co = unKey
+instance {-# OVERLAPPING #-} (Ord k', Convable [(k, v)] [(k', v')]) => Convable [(k, v)] (Map k' v') where
+  co = mkMap ∘ co ∘ traceCo "[(k, v)] (Map k' v')"
 
-instance {-# OVERLAPPING #-} (Ord a) => Convable [a] (Set a) where
-  co = mkSet
+instance (Convable a b) => Convable [a] (NonEmpty b)
 
-instance {-# INCOHERENT #-} (Convable a [b], Mkable f b) => Convable a (f b) where
-  co = mk . co
+instance (Convable a b) => Convable [a] (Vector b)
 
-instance {-# OVERLAPPING #-} Convable (Map k v) [(k, v)] where
-  co = unMap
+instance
+  {-# OVERLAPPING #-}
+  ( Semigroup (m k),
+    SwapWithable Map m k a
+  ) =>
+  Convable (Map k a) (Map a (m k))
+  where
+  co = swapcat ∘ traceCo "String Text"
 
-instance {-# INCOHERENT #-} (Mkable f a) => Convable [a] (f a) where
-  co = mk
+instance {-# OVERLAPPING #-} Convable Text String where
+  co = Quaalude.Collection.unpack ∘ traceCo "Text String"
 
-instance {-# INCOHERENT #-} (MkableKey f, Ord k) => Convable [(k, v)] (f k v) where
-  co = mkKey
+instance {-# OVERLAPPING #-} Convable String Text where
+  co = Quaalude.Collection.pack ∘ traceCo "String Text"
 
-instance {-# OVERLAPPABLE #-} (Convable a b, Convable b c) => Convable a c where
-  co a = co (co a :: b)
+-- instance {-# INCOHERENT #-} (Unable f) => Convable (f a) [a] where
+--  co = un ∘ traceCo "(f a) [a]"
 
-instance {-# OVERLAPPABLE #-} (Functor f, Convable a b) => Convable (f a) (f b) where
-  co = fmap co
+-- instance {-# INCOHERENT #-} (UnableKey f) => Convable (f k v) [(k, v)] where
+--   co = unKey ∘ traceCo "(f k v) [(k, v)]"
 
-instance {-# OVERLAPPABLE #-} (Bifunctor f, Convable a c, Convable b d) => Convable (f a b) (f c d) where
-  co = bimap (co @a @c) (co @b @d)
+-- instance {-# OVERLAPPING #-} (Ord a) => Convable [a] (Set a) where
+--  co = mkSet ∘ traceCo "[a] (Set a)"
 
-instance {-# OVERLAPPABLE #-} (Trifunctor p, Convable a d, Convable b e, Convable c f) => Convable (p a b c) (p d e f) where
-  co = trimap (co @a @d) (co @b @e) (co @c @f)
+-- instance {-# OVERLAPPING #-} Convable (Map k v) [(k, v)] where
+-- co = unMap ∘ traceCo "(Map k v) [(k, v)]"
 
-instance Convable Text String where
-  co = Quaalude.Collection.unpack
+-- instance {-# INCOHERENT #-} (Mkable f a) => Convable [a] (f a) where
+--  co = mk ∘ traceCo "[a] (f a)"
 
-instance Convable String Text where
-  co = Quaalude.Collection.pack
+-- instance {-# INCOHERENT #-} (MkableKey f, Ord k) => Convable [(k, v)] (f k v) where
+--  co = mkKey ∘ traceCo "[(k, v)] (f k v)"
+
+-- instance {-# OVERLAPPABLE #-} (Convable a b, Convable b c) => Convable a c where
+--   co a = co (traceCo "a c via b" (co a :: b))
 
 (⊏⊐) :: (Convable a c) => a -> c
 (⊏⊐) = co
@@ -859,6 +885,8 @@ class Magnitude a where
   default magnitude :: a -> MagnitudeF a
   magnitude = (|.|)
 
+xs |?| p = ([x | x <- xs, p x] |.|)
+
 instance (Integral a) => Magnitude (RangeOf a) where
   (|.|) (RangeOf rs ab) = rlen rs ab
 
@@ -905,3 +933,15 @@ instance Middle [] where
 
 snoc :: [a] -> (a, [a])
 snoc (x : xs) = (x, xs)
+
+class ZipWithable f where
+  (⤊) :: (ZipWithable f) => (f a, f b) -> (a -> b -> c) -> f c
+
+  (⤊*) :: (Integral i, Mkable f a, Semigroup (f a), Foldable f, Functor f) => f a -> f i -> f a
+  xs ⤊* ns = ((Ŀ (<>) ((⤊) @f (fromIntegral <$> ns, xs) (\n x -> mk @f (replicate n x)))) !>)
+
+instance ZipWithable [] where
+  (a, b) ⤊ f = zipWith f a b
+
+instance ZipWithable NonEmpty where
+  (a, b) ⤊ f = NonEmpty.zipWith f a b
