@@ -537,8 +537,11 @@ a ⊉ b = not (a ⊇ b)
 (⊅) :: (Ord a) => Set a -> Set a -> Bool
 a ⊅ b = not (a ⊃ b)
 
-setMap :: (Ord b) => (a -> b) -> Set a -> Set b
-setMap = S.map
+class SetMap f where
+  setMap :: (Ord b) => (a -> b) -> f a -> f b
+
+instance SetMap Set where
+  setMap = S.map
 
 setConcat :: (Ord a) => Set (Set a) -> Set a
 setConcat = S.unions . S.toList
@@ -866,10 +869,12 @@ type family MagnitudeF a where
   MagnitudeF [_] = Integer
   MagnitudeF (NonEmpty _) = Integer
   MagnitudeF (Set _) = Integer
+  MagnitudeF (MaxSet _) = Integer
+  MagnitudeF (Vector _) = Integer
   MagnitudeF (Map _ _) = Integer
   MagnitudeF (a, a) = MagnitudeF (RangeOf a)
   MagnitudeF (RangeOf a) = a
-  MagnitudeF a = MagnitudeF (RangeOf a)
+  MagnitudeF a = Integer
 
 data MagnitudeOp a b
 
@@ -887,6 +892,8 @@ class Magnitude a where
 
 xs |?| p = ([x | x <- xs, p x] |.|)
 
+a |=| b = (a |.|) ≡ (b |.|)
+
 instance (Integral a) => Magnitude (RangeOf a) where
   (|.|) (RangeOf rs ab) = rlen rs ab
 
@@ -897,7 +904,11 @@ instance Magnitude [a]
 
 instance Magnitude (Set a)
 
+instance Magnitude (MaxSet a)
+
 instance Magnitude (Map k v)
+
+instance Magnitude (Vector a)
 
 instance Magnitude (NonEmpty a)
 
@@ -906,6 +917,97 @@ class Transposable a where
 
 instance Transposable [[a]] where
   (⊤) = transpose
+
+instance (Ord a) => Transposable (Set (a, a)) where
+  (⊤) cs = setMap Prelude.swap cs
+
+instance (Transposable (Set (a, a))) => Transposable (MaxSet (a, a)) where
+  (⊤) (MaxSet (maxX, maxY) cs) = MaxSet (maxY, maxX) (cs ⊤)
+
+class HMirrorable a where
+  (◐) :: a -> a
+
+instance (Num a, Ord a) => HMirrorable (Set (a, a)) where
+  (◐) cs
+    | cs ≡ (∅) = cs
+    | otherwise =
+        let maxX = maximum (fst <$> un cs)
+         in setMap (first (maxX -)) cs
+
+instance (Num a, Ord a) => HMirrorable (MaxSet (a, a)) where
+  (◐) (MaxSet (maxX, maxY) cs) = MaxSet (maxX, maxY) (setMap (first (maxX -)) cs)
+
+class VMirrorable a where
+  (◓) :: a -> a
+
+instance (Num a, Ord a) => VMirrorable (Set (a, a)) where
+  (◓) cs
+    | cs ≡ (∅) = cs
+    | otherwise =
+        let maxY = maximum (snd <$> un cs)
+         in setMap (second (maxY -)) cs
+
+class Bimaximum a where
+  bimaximum :: (Foldable f, Functor f) => f a -> a
+
+instance (Ord a) => Bimaximum (a, a) where
+  bimaximum as =
+    ( ((Ŀ max (fst <$> as)) !>),
+      ((Ŀ max (snd <$> as)) !>)
+    )
+
+class Biminimum a where
+  biminimum :: (Foldable f, Functor f) => f a -> a
+
+instance (Ord a) => Biminimum (a, a) where
+  biminimum as =
+    ( ((Ŀ min (fst <$> as)) !>),
+      ((Ŀ min (snd <$> as)) !>)
+    )
+
+data MaxSet a = MaxSet a (Set a) deriving (Eq, Ord, Show)
+
+instance (Ord a, Bimaximum a) => Semigroup (MaxSet a) where
+  (MaxSet m0 s0) <> (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 <> s1)
+
+instance (Ord a, Bimaximum (a, a), Num a) => Monoid (MaxSet (a, a)) where
+  mempty = MaxSet (0, 0) (∅)
+
+instance SetMap MaxSet where
+  setMap f (MaxSet m s) = MaxSet (f m) (setMap f s)
+
+instance (Bimaximum a, Ord a) => Mkable MaxSet a where
+  mk as = MaxSet (bimaximum as) (mkSet as)
+
+instance Unable MaxSet where
+  un (MaxSet _ cs) = un cs
+
+instance (Sizable (Set a)) => Sizable (MaxSet a) where
+  size (MaxSet _ s) = size s
+
+instance (Memberable a (Set a)) => Memberable a (MaxSet a) where
+  a ∈ (MaxSet _ s) = a ∈ s
+  a ∉ (MaxSet _ s) = a ∉ s
+
+instance (Bimaximum a, Unionable (Set a)) => Unionable (MaxSet a) where
+  (MaxSet m0 s0) ∪ (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 ∪ s1)
+
+instance (Bimaximum a, Intersectable (Set a)) => Intersectable (MaxSet a) where
+  (MaxSet m0 s0) ∩ (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 ∩ s1)
+
+instance (Arbitrary Set a, Bimaximum a, Ord a) => Arbitrary MaxSet a where
+  arbitrary (MaxSet _ a) = arbitrary @Set a
+
+instance (Num a, Ord a) => VMirrorable (MaxSet (a, a)) where
+  (◓) (MaxSet (maxX, maxY) cs) = MaxSet (maxX, maxY) (setMap (second (maxY -)) cs)
+
+class Rotatable a where
+  (↺) :: a -> a
+  (↻) :: a -> a
+
+instance (Num a, Ord a) => Rotatable (MaxSet (a, a)) where
+  (↺) (MaxSet (maxX, maxY) cs) = MaxSet (maxY, maxX) (setMap (\(x, y) -> (maxY - y, x)) cs)
+  (↻) (MaxSet (maxX, maxY) cs) = MaxSet (maxY, maxX) (setMap (\(x, y) -> (y, maxX - x)) cs)
 
 class Trifunctor (f :: Type -> Type -> Type -> Type) where
   trimap :: (a -> a') -> (b -> b') -> (c -> c') -> f a b c -> f a' b' c'

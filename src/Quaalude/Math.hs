@@ -7,8 +7,8 @@ import GHC.TypeNats
 import Quaalude.Alias
 import Quaalude.Collection
 import Relude.Unsafe qualified as U
-import Text.Show
-import Prelude hiding (drop)
+import Text.Show qualified as TS
+import Prelude hiding (drop, take)
 
 diff :: (Num a) => a -> a -> a
 diff a b = abs (a - b)
@@ -108,7 +108,7 @@ newtype Dec n a = Dec {unDec :: a} deriving (Functor, Applicative, Eq, Ord, Siza
 type Dℤ = Dec ℤ
 
 instance (ToDecimal n a, Show n, ToDecimal n (Dec n a), Show a) => Show (Dec n a) where
-  show (Dec a) = "D" <> Text.Show.show (toDecimal @n a)
+  show (Dec a) = "D" <> TS.show (toDecimal @n a)
 
 instance (ToDigits n a) => ToDigits n (Dec n a) where
   toDigits (Dec a) = toDigits a
@@ -133,3 +133,6 @@ instance (Num n, ToDecimal n (Dec n a), FromDecimal n (Dec n a), OverDecimal n (
 
 decDigit :: (Integral n) => n -> n -> n
 decDigit n x = x - (x `div` (10 ^ n)) ⋅ (10 ^ n)
+
+showDP :: (Integral i, Floating n, RealFrac n, IsString s, Show n) => i -> n -> s
+showDP d n = let e = 10.0 ** (fromIntegral d) in show $ fromIntegral (round (n ⋅ e)) / e

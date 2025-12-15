@@ -247,6 +247,11 @@ type Grid = Grid' Coord2
 
 type G = Grid'
 
+instance Sizable (Grid' k a)
+
+instance (MagnitudeF (Grid' k a) ~ Integer, Coord' Int k k, Ord k, GridCell a) => Magnitude (Grid' k a) where
+  (|.|) = (|.|) ∘ unGrid
+
 newtype PrettyGrid g = PrettyGrid g
 
 instance (Griddable Identity g k a) => TS.Show (PrettyGrid (g k a)) where
@@ -837,10 +842,6 @@ rotations = variants >>> pure >>> ([vId, r90, r180, r270] <*>)
 
 instance (Griddable Identity g k a, k ~ p c c, Swappable p c c) => Transposable (g k a) where
   (⊤) = runIdentity . mapCoordsM (swap @p @c @c)
-
-class Rotatable a where
-  (↺) :: a -> a
-  (↻) :: a -> a
 
 instance (Griddable Identity g k a) => Rotatable (g k a) where
   (↺) = variants >>> r270

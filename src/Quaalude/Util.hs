@@ -14,6 +14,7 @@ import Data.Bitraversable
 import Data.Default
 import Data.Fin (Fin)
 import Data.HList hiding ((.<.))
+import Data.List.Extra (groupOn)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Monoid (Sum (Sum, getSum))
@@ -1327,8 +1328,8 @@ type k .->. v = k -> MM k v
 (.<$>.) :: (Ord k, Functor f) => (k .->. v) -> f k -> f (MM k v)
 f .<$>. a = memo f <$> a
 
-(.=<<.) :: (Ord k, Monoid (MM k v)) => (k .->. v) -> [k] -> (MM k v)
-f .=<<. a = mconcat (f .<$>. a)
+(.=<<.) :: (Ord k, Traversable m) => (k .->. v) -> m k -> _
+f .=<<. a = sequence $ f .<$>. a
 
 class Runnable f where
   run :: f a -> a
@@ -1423,3 +1424,9 @@ type SymSChars s = SChars (SymbolToList s)
 type CharV s = V (SymSChars s)
 
 type 𝘊 s = CharV s
+
+sortGroupOn :: (Ord b) => (a -> b) -> [a] -> [[a]]
+sortGroupOn f xs = groupOn f $ sortOn f xs
+
+nubOn :: (Ord b) => (a -> b) -> [a] -> [a]
+nubOn f xs = head' <$> sortGroupOn f xs

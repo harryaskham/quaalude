@@ -7,6 +7,12 @@ import Quaalude.Tuple
 import Quaalude.Util
 import Prelude hiding (filter)
 
+class Box f a where
+  box :: (a, a) -> (a, a) -> f (a, a)
+
+instance (Ord a, Enum a, Mkable f (a, a)) => Box f a where
+  box (x0, y0) (x1, y1) = mk [(x, y) | x <- range x0 x1, y <- range y0 y1]
+
 -- ((x, a), (x, b)) is line at x from a to b including (x,a) and (x,b)
 
 linesSubtractLines :: [ℤ² × ℤ²] -> [ℤ² × ℤ²] -> [ℤ² × ℤ²]
