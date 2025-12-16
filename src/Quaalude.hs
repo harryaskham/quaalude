@@ -49,6 +49,7 @@ import Data.HList as X (HList (..), (.*.))
 import Data.List.Extra as X (groupOn)
 import Data.List.GroupBy as X
 import Data.Map.Strict as X hiding (delete, deleteFindMin, drop, empty, filter, foldl', foldr, fromList, keys, lookup, map, mapMaybe, null, size, split, splitAt, take, toList, (!?), (\\))
+import Data.MonoTraversable as X
 import Data.PQueue.Prio.Min (deleteFindMin)
 import Data.Ratio as X
 import Data.Sequence (Seq (..))

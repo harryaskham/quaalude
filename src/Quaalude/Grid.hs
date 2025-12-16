@@ -217,6 +217,7 @@ instance Itemsable ListGrid' Coord2 a where
 type ListGrid a = ListGrid' Coord2 a
 
 instance (Griddable m Grid' Coord2 a) => Griddable m ListGrid' Coord2 a where
+  mkGridM [] = pure $ ListGrid []
   mkGridM cs =
     let w = maximum (fst . fst <$> cs)
         h = maximum (snd . fst <$> cs)

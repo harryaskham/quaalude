@@ -19,6 +19,7 @@ import Data.List.Extra qualified as LE
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.List.Split qualified as LS
 import Data.Map.Strict qualified as M
+import Data.MonoTraversable
 import Data.PQueue.Prio.Min qualified as PQ
 import Data.Sequence qualified as SQ
 import Data.Set qualified as S
@@ -276,6 +277,12 @@ unSet = S.toList
 class Sizable a where
   size :: (Integral i) => a -> i
 
+instance Sizable Int where
+  size = fromIntegral
+
+instance Sizable Integer where
+  size = fromIntegral
+
 instance Sizable [a] where
   size = fromIntegral . L.length
 
@@ -415,8 +422,8 @@ class ValueGettable f k v | f -> v where
     [] -> error "ValueGettable |!>: not found"
     (k : _) -> k
 
-instance (Eq a) => ValueGettable [a] Int a where
-  l |?> a = L.elemIndices a l
+instance (Eq a, Integral i) => ValueGettable [a] i a where
+  l |?> a = fromIntegral <$> L.elemIndices a l
 
 instance (Ord k, Ord v) => ValueGettable (Map k v) k v where
   m |?> v = swapcat m |? v ? []
@@ -912,6 +919,32 @@ instance Magnitude (Vector a)
 
 instance Magnitude (NonEmpty a)
 
+instance Magnitude Int
+
+instance Magnitude Integer
+
+class Bimaximum a where
+  bimaximum :: (Foldable f) => f a -> a
+  default bimaximum :: (Bimaximum [a], Foldable f) => f a -> a
+  bimaximum as = bimaximum $ F.toList as
+
+instance (Ord a) => Bimaximum (a, a) where
+  bimaximum as =
+    let l = F.toList as
+     in (maximum (fst <$> l), maximum (snd <$> l))
+
+class Biminimum a where
+  biminimum :: (Foldable f) => f a -> a
+  default biminimum :: (Biminimum [a], Foldable f) => f a -> a
+  biminimum as = biminimum $ F.toList as
+
+instance (Ord a) => Biminimum (a, a) where
+  biminimum as =
+    let l = F.toList as
+     in (minimum (fst <$> l), minimum (snd <$> l))
+
+data MaxSet a = MaxSet a (Set a) deriving (Eq, Ord, Show)
+
 class Transposable a where
   (⊤) :: a -> a
 
@@ -947,26 +980,6 @@ instance (Num a, Ord a) => VMirrorable (Set (a, a)) where
         let maxY = maximum (snd <$> un cs)
          in setMap (second (maxY -)) cs
 
-class Bimaximum a where
-  bimaximum :: (Foldable f, Functor f) => f a -> a
-
-instance (Ord a) => Bimaximum (a, a) where
-  bimaximum as =
-    ( ((Ŀ max (fst <$> as)) !>),
-      ((Ŀ max (snd <$> as)) !>)
-    )
-
-class Biminimum a where
-  biminimum :: (Foldable f, Functor f) => f a -> a
-
-instance (Ord a) => Biminimum (a, a) where
-  biminimum as =
-    ( ((Ŀ min (fst <$> as)) !>),
-      ((Ŀ min (snd <$> as)) !>)
-    )
-
-data MaxSet a = MaxSet a (Set a) deriving (Eq, Ord, Show)
-
 instance (Ord a, Bimaximum a) => Semigroup (MaxSet a) where
   (MaxSet m0 s0) <> (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 <> s1)
 
@@ -975,6 +988,11 @@ instance (Ord a, Bimaximum (a, a), Num a) => Monoid (MaxSet (a, a)) where
 
 instance SetMap MaxSet where
   setMap f (MaxSet m s) = MaxSet (f m) (setMap f s)
+
+type instance Element (MaxSet a) = a
+
+instance (Ord a) => MonoFunctor (MaxSet a) where
+  omap f (MaxSet m s) = MaxSet (f m) (omap f s)
 
 instance (Bimaximum a, Ord a) => Mkable MaxSet a where
   mk as = MaxSet (bimaximum as) (mkSet as)
@@ -989,11 +1007,17 @@ instance (Memberable a (Set a)) => Memberable a (MaxSet a) where
   a ∈ (MaxSet _ s) = a ∈ s
   a ∉ (MaxSet _ s) = a ∉ s
 
-instance (Bimaximum a, Unionable (Set a)) => Unionable (MaxSet a) where
-  (MaxSet m0 s0) ∪ (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 ∪ s1)
+instance (Ord a, Bimaximum a, Unionable (Set a)) => Unionable (MaxSet a) where
+  (MaxSet m0 s0) ∪ (MaxSet m1 s1) =
+    mk $ un (s0 ∪ s1)
 
-instance (Bimaximum a, Intersectable (Set a)) => Intersectable (MaxSet a) where
-  (MaxSet m0 s0) ∩ (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 ∩ s1)
+-- MaxSet (bimaximum [m0, m1]) (s0 ∪ s1)
+
+instance (Ord a, Bimaximum a, Intersectable (Set a)) => Intersectable (MaxSet a) where
+  (MaxSet m0 s0) ∩ (MaxSet m1 s1) =
+    mk $ un (s0 ∩ s1)
+
+-- MaxSet (bimaximum [m0, m1]) (s0 ∩ s1)
 
 instance (Arbitrary Set a, Bimaximum a, Ord a) => Arbitrary MaxSet a where
   arbitrary (MaxSet _ a) = arbitrary @Set a
@@ -1047,3 +1071,6 @@ instance ZipWithable [] where
 
 instance ZipWithable NonEmpty where
   (a, b) ⤊ f = NonEmpty.zipWith f a b
+
+instance (Ord a) => MonoFunctor (Set a) where
+  omap = S.map

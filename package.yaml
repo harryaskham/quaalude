@@ -69,6 +69,7 @@ dependencies:
   - named
   - overhang
   - z3
+  - mono-traversable
 
 default-extensions:
   - OverloadedStrings
