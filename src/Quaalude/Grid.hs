@@ -1117,3 +1117,7 @@ instance (Griddable Identity ListGrid' (CanonicalParseF k) (CanonicalParseF a)) 
 
 instance (Griddable Identity G (CanonicalParseF k) (CanonicalParseF a)) => CanonicalParse (G k a) where
   parseCanonical = gridParseCanonical @G @k @a
+
+traceGrid g a
+  | (un g |.|) > 0 = traceTextLn (pretty g) a
+  | otherwise = traceShow "(empty grid)" a

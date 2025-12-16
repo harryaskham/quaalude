@@ -604,14 +604,37 @@ emptySeq = SQ.empty
 (<|) :: a -> Seq a -> Seq a
 (<|) = (SQ.<|)
 
+infixr 5 <|
+
+(⊲) :: a -> Seq a -> Seq a
+(⊲) = (SQ.<|)
+
+infixr 5 ⊲
+
 (|>) :: Seq a -> a -> Seq a
 (|>) = (SQ.|>)
+
+infixl 5 |>
+
+(⊳) :: Seq a -> a -> Seq a
+(⊳) = (SQ.|>)
+
+infixl 5 ⊳
 
 (><) :: Seq a -> Seq a -> Seq a
 (><) = (SQ.><)
 
+infixr 5 ><
+
+(⋈) :: Seq a -> Seq a -> Seq a
+(⋈) = (SQ.><)
+
+infixr 5 ⋈
+
 (>/<) :: (Eq a) => Seq a -> a -> Seq a
 s >/< a = foldl' (flip SQ.deleteAt) s (SQ.elemIndicesL a s)
+
+infixr 5 >/<
 
 mkMinQ :: (Ord k) => [(k, a)] -> PQ.MinPQueue k a
 mkMinQ = PQ.fromList
@@ -828,6 +851,12 @@ class Arbitrary f a where
   default arbitrarySnoc :: (Unable f, Mkable f a) => f a -> (a, f a)
   arbitrarySnoc = second mk . arbitrarySnoc @[] . un
 
+  arb :: f a -> Maybe a
+  default arb :: (Foldable f) => f a -> Maybe a
+  arb as = case F.toList as of
+    [] -> Nothing
+    _ -> Just (arbitrary as)
+
 instance Arbitrary [] a where
   arbitrarySnoc [] = error "arbitrary: no elements"
   arbitrarySnoc (a : as) = (a, as)
@@ -837,8 +866,8 @@ instance (Ord a) => Arbitrary Set a
 instance (Ord k) => Arbitrary (Map k) v where
   arbitrarySnoc = bimap snd mkMap . arbitrarySnoc . unMap
 
-arb :: (Arbitrary f a) => f a -> a
-arb = arbitrary
+instance (Ord k) => Arbitrary (MinQ k) a where
+  arbitrarySnoc as = let ((_, a), as') = PQ.deleteFindMin as in (a, as')
 
 inRange :: (Ord a) => (a, a) -> a -> Bool
 inRange (a, b) c = c >= a && c <= b
@@ -901,6 +930,10 @@ xs |?| p = ([x | x <- xs, p x] |.|)
 
 a |=| b = (a |.|) ≡ (b |.|)
 
+a |≡| b = (a |.|) ≡ (b |.|)
+
+a |≢| b = (a |.|) ≢ (b |.|)
+
 instance (Integral a) => Magnitude (RangeOf a) where
   (|.|) (RangeOf rs ab) = rlen rs ab
 
@@ -944,6 +977,9 @@ instance (Ord a) => Biminimum (a, a) where
      in (minimum (fst <$> l), minimum (snd <$> l))
 
 data MaxSet a = MaxSet a (Set a) deriving (Eq, Ord, Show)
+
+instance Foldable MaxSet where
+  foldMap f (MaxSet _ s) = foldMap f s
 
 class Transposable a where
   (⊤) :: a -> a

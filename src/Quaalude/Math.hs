@@ -1,5 +1,6 @@
 module Quaalude.Math where
 
+import Control.Arrow
 import Data.Basis
 import Data.List qualified as L
 import Data.Ratio
@@ -15,6 +16,23 @@ diff a b = abs (a - b)
 
 diffs :: (Num a) => [a] -> [a]
 diffs xs = uncurry (-) <$> zip (drop 1 xs) xs
+
+data DiffList a = DiffList (Seq a) deriving (Show, Eq, Ord, Functor, Applicative, Monad)
+
+class MkDiffList a where
+  mkDiffList :: [a] -> DiffList a
+
+instance (Num a, Num b) => MkDiffList (a, b) where
+  mkDiffList xs = DiffList (mk [(a' - a, b' - b) | ((a, b), (a', b')) <- zip (drop 1 xs) xs])
+
+diffListConcatVia :: forall a. (MkDiffList a) => DiffList a -> a -> a -> DiffList a -> DiffList a
+diffListConcatVia ds0 l0 h1 ds1 = ds0 <> mkDiffList @a [l0, h1] <> ds1
+
+instance Monoid (DiffList a) where
+  mempty = DiffList mempty
+
+instance Semigroup (DiffList a) where
+  DiffList a <> DiffList b = DiffList (a ⋈ b)
 
 sgn :: (Num a, Ord a) => a -> a
 sgn x

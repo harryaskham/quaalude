@@ -81,3 +81,16 @@ traceStackId = traceStack ""
 
 traceIf :: Bool -> String -> a -> a
 traceIf b s = if b then traceShow s else id
+
+tracePrefixId :: (Show a, Show b) => a -> b -> b
+tracePrefixId a b = traceShow (a, b) b
+
+tracePrefixIdM :: (Monad m, Show a, Show b) => a -> m b -> m b
+tracePrefixIdM a mb =
+  traceShow a $ do
+    b <- mb
+    traceShow b (pure b)
+
+traceN f xs a = foldl' (flip f) a xs
+
+traceNId f xs = traceN f xs xs
