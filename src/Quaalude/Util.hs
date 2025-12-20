@@ -1092,10 +1092,10 @@ manyNoneOf1 = many1 . noneOf
 
 -- Map helpers
 
-countMap :: (Ord a, Integral n) => [a] -> M.Map a n
+countMap :: (Ord a, Num n) => [a] -> M.Map a n
 countMap xs = M.fromListWith (+) (map (,1) xs)
 
-counts :: (Ord a, Integral n) => [a] -> M.Map a n
+counts :: (Ord a, Num n) => [a] -> M.Map a n
 counts = countMap
 
 adjustWithDefault :: (Ord k) => a -> (a -> a) -> k -> M.Map k a -> M.Map k a
