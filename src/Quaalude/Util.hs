@@ -1337,6 +1337,9 @@ class Runnable f where
 instance Runnable (Memo k v) where
   run = startEvalMemo
 
+instance Convable (Memo k v a) a where
+  co = run
+
 -- Defaults
 
 instance Default Char where
