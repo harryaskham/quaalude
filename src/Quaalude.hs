@@ -75,6 +75,7 @@ import Quaalude.Grid as X
 import Quaalude.Lists as X
 import Quaalude.Math as X
 import Quaalude.Megaparsec as X
+import Quaalude.QuasiSet as X
 import Quaalude.Records as X
 import Quaalude.Reducible as X
 import Quaalude.Show as X

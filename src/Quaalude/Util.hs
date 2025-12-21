@@ -13,6 +13,7 @@ import Data.Biapplicative
 import Data.Bitraversable
 import Data.Default
 import Data.Fin (Fin)
+import Data.Foldable qualified as F
 import Data.HList hiding ((.<.))
 import Data.List.Extra (groupOn)
 import Data.Map.Strict (Map)
@@ -1180,8 +1181,8 @@ duplicates xs = M.keys $ M.filter (> 1) (countMap xs)
 enumerate :: (Enum a) => [a]
 enumerate = enumFrom (toEnum 0)
 
-enum :: (Num a, Enum a) => [b] -> [(a, b)]
-enum = zip [0 ..]
+enum :: (Foldable f, Mkable f (a, b)) => (Num a, Enum a) => f b -> f (a, b)
+enum xs = mk (zip [0 ..] (F.toList xs))
 
 (..#) :: (Num a, Enum a) => [b] -> [(a, b)]
 (..#) = enum
@@ -1210,6 +1211,11 @@ unjust Nothing = error "unjust Nothing"
 -- rangeFromTo not caring about ordering
 range :: (Ord a, Enum a) => a -> a -> [a]
 range a b = [min a b .. max a b]
+
+(|...|) :: (Ord a, Enum a, Mkable f a) => a -> a -> f a
+a |...| b = mk [min a b .. max a b]
+
+infix 0 |...|
 
 (-!) :: (Num a) => a -> a -> a
 (-!) = flip (-)
