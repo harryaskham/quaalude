@@ -124,6 +124,9 @@ instance Unable Set where
 instance Unable (Map k) where
   un = fmap snd ∘ unMap ∘ traceUn "Map"
 
+instance (Ord k) => Unable (MinQ k) where
+  un = F.toList ∘ traceUn "MinQ"
+
 instance Unable Seq where
   un = unSeq ∘ traceUn "Seq"
 
@@ -273,11 +276,22 @@ class Insertable f a where
   default (|->) :: a -> f a -> f a
   (|->) = flip (<-|)
 
+instance Insertable [] a where
+  (|->) = (:)
+
 instance (Ord a) => Insertable Set a where
   (|->) = S.insert
 
-(\\) :: (Ord a) => Set a -> Set a -> Set a
-(\\) = (S.\\)
+class Differenceable f a where
+  (\\) :: f a -> f a -> f a
+  (∖) :: f a -> f a -> f a
+  (∖) = (\\)
+
+instance (Eq a) => Differenceable [] a where
+  (\\) = (L.\\)
+
+instance (Ord a) => Differenceable Set a where
+  (\\) = (S.\\)
 
 class Sizable a where
   size :: (Integral i) => a -> i
@@ -482,12 +496,17 @@ class Deletable m k where
   delete :: k -> m -> m
   default delete :: k -> m -> m
   delete = flip (|\)
+
   (|\) :: m -> k -> m
   default (|\) :: m -> k -> m
   (|\) = flip delete
+
   (|\..) :: (Foldable f) => m -> f k -> m
   default (|\..) :: (Foldable f) => m -> f k -> m
   xs |\.. ks = foldl' (|\) xs ks
+
+  (∸) :: m -> k -> m
+  (∸) = (|\)
 
 instance (Ord k) => Deletable (Map k v) k where
   delete = M.delete
@@ -521,9 +540,6 @@ instance (forall a. Semigroup (g a), forall a. Convable (f a) (g a)) => ConvMono
 
 instance (forall a. Semigroup (h a), forall a. Convable (f a) (h a), forall a. Convable (g a) (h a)) => ConvMonoid f g h where
   a <⊕> b = co a <> co b
-
-(∖) :: (Ord a) => Set a -> Set a -> Set a
-(∖) = S.difference
 
 (⊆) :: (Ord a) => Set a -> Set a -> Bool
 (⊆) = S.isSubsetOf
@@ -738,12 +754,16 @@ swapcat = swapWith (<>)
 
 class Filterable f a where
   filter :: (a -> Bool) -> f a -> f a
+  default filter :: (a -> Bool) -> f a -> f a
+  filter = (<-?-|)
 
-(|-?->) :: (Filterable f a) => f a -> (a -> Bool) -> f a
-(|-?->) = flip filter
+  (|-?->) :: f a -> (a -> Bool) -> f a
+  default (|-?->) :: f a -> (a -> Bool) -> f a
+  (|-?->) = flip (<-?-|)
 
-(<-?-|) :: (Filterable f a) => (a -> Bool) -> f a -> f a
-(<-?-|) = filter
+  (<-?-|) :: (a -> Bool) -> f a -> f a
+  default (<-?-|) :: (a -> Bool) -> f a -> f a
+  (<-?-|) = filter
 
 instance Filterable [] a where
   filter = L.filter
@@ -762,6 +782,9 @@ instance Filterable Seq a where
 
 instance Filterable (Map k) v where
   filter = M.filter
+
+instance (Ord k) => Filterable (MinQ k) a where
+  filter = PQ.filter
 
 class Takeable n f a where
   take :: n -> f a -> f a
@@ -906,16 +929,27 @@ instance (Ord a) => Memberable a (RangeOf a) where
   x ∈ (RangeOf Incl (a, b)) = x >= a && x <= b
   x ∈ (RangeOf Excl (a, b)) = x >= a && x < b
 
-type family MagnitudeF a where
-  MagnitudeF [_] = Integer
-  MagnitudeF (NonEmpty _) = Integer
-  MagnitudeF (Set _) = Integer
-  MagnitudeF (MaxSet _) = Integer
-  MagnitudeF (Vector _) = Integer
-  MagnitudeF (Map _ _) = Integer
-  MagnitudeF (a, a) = MagnitudeF (RangeOf a)
-  MagnitudeF (RangeOf a) = a
-  MagnitudeF a = Integer
+type family MagnitudeF a :: *
+
+type instance MagnitudeF [_] = Integer
+
+type instance MagnitudeF (NonEmpty _) = Integer
+
+type instance MagnitudeF (Set _) = Integer
+
+type instance MagnitudeF (Seq _) = Integer
+
+type instance MagnitudeF (Vector _) = Integer
+
+type instance MagnitudeF (Map _ _) = Integer
+
+type instance MagnitudeF (a, a) = a
+
+type instance MagnitudeF (RangeOf a) = a
+
+type instance MagnitudeF Integer = Integer
+
+type instance MagnitudeF Int = Integer
 
 data MagnitudeOp a b
 
@@ -947,9 +981,9 @@ instance (Integral a) => Magnitude (a, a) where
 
 instance Magnitude [a]
 
-instance Magnitude (Set a)
+instance Magnitude (Seq a)
 
-instance Magnitude (MaxSet a)
+instance Magnitude (Set a)
 
 instance Magnitude (Map k v)
 
@@ -960,6 +994,39 @@ instance Magnitude (NonEmpty a)
 instance Magnitude Int
 
 instance Magnitude Integer
+
+class Transposable a where
+  (⊤) :: a -> a
+
+instance Transposable [[a]] where
+  (⊤) = transpose
+
+instance (Ord a) => Transposable (Set (a, a)) where
+  (⊤) cs = setMap Prelude.swap cs
+
+class HMirrorable a where
+  (◐) :: a -> a
+
+instance (Num a, Ord a) => HMirrorable (Set (a, a)) where
+  (◐) cs
+    | cs ≡ (∅) = cs
+    | otherwise =
+        let maxX = maximum (fst <$> un cs)
+         in setMap (first (maxX -)) cs
+
+class VMirrorable a where
+  (◓) :: a -> a
+
+instance (Num a, Ord a) => VMirrorable (Set (a, a)) where
+  (◓) cs
+    | cs ≡ (∅) = cs
+    | otherwise =
+        let maxY = maximum (snd <$> un cs)
+         in setMap (second (maxY -)) cs
+
+class Rotatable a where
+  (↺) :: a -> a
+  (↻) :: a -> a
 
 class Bimaximum a where
   bimaximum :: (Foldable f) => f a -> a
@@ -980,99 +1047,6 @@ instance (Ord a) => Biminimum (a, a) where
   biminimum as =
     let l = F.toList as
      in (minimum (fst <$> l), minimum (snd <$> l))
-
-data MaxSet a = MaxSet a (Set a) deriving (Eq, Ord, Show)
-
-instance Foldable MaxSet where
-  foldMap f (MaxSet _ s) = foldMap f s
-
-class Transposable a where
-  (⊤) :: a -> a
-
-instance Transposable [[a]] where
-  (⊤) = transpose
-
-instance (Ord a) => Transposable (Set (a, a)) where
-  (⊤) cs = setMap Prelude.swap cs
-
-instance (Transposable (Set (a, a))) => Transposable (MaxSet (a, a)) where
-  (⊤) (MaxSet (maxX, maxY) cs) = MaxSet (maxY, maxX) (cs ⊤)
-
-class HMirrorable a where
-  (◐) :: a -> a
-
-instance (Num a, Ord a) => HMirrorable (Set (a, a)) where
-  (◐) cs
-    | cs ≡ (∅) = cs
-    | otherwise =
-        let maxX = maximum (fst <$> un cs)
-         in setMap (first (maxX -)) cs
-
-instance (Num a, Ord a) => HMirrorable (MaxSet (a, a)) where
-  (◐) (MaxSet (maxX, maxY) cs) = MaxSet (maxX, maxY) (setMap (first (maxX -)) cs)
-
-class VMirrorable a where
-  (◓) :: a -> a
-
-instance (Num a, Ord a) => VMirrorable (Set (a, a)) where
-  (◓) cs
-    | cs ≡ (∅) = cs
-    | otherwise =
-        let maxY = maximum (snd <$> un cs)
-         in setMap (second (maxY -)) cs
-
-instance (Ord a, Bimaximum a) => Semigroup (MaxSet a) where
-  (MaxSet m0 s0) <> (MaxSet m1 s1) = MaxSet (bimaximum [m0, m1]) (s0 <> s1)
-
-instance (Ord a, Bimaximum (a, a), Num a) => Monoid (MaxSet (a, a)) where
-  mempty = MaxSet (0, 0) (∅)
-
-instance SetMap MaxSet where
-  setMap f (MaxSet m s) = MaxSet (f m) (setMap f s)
-
-type instance Element (MaxSet a) = a
-
-instance (Ord a) => MonoFunctor (MaxSet a) where
-  omap f (MaxSet m s) = MaxSet (f m) (omap f s)
-
-instance (Bimaximum a, Ord a) => Mkable MaxSet a where
-  mk as = MaxSet (bimaximum as) (mkSet as)
-
-instance Unable MaxSet where
-  un (MaxSet _ cs) = un cs
-
-instance (Sizable (Set a)) => Sizable (MaxSet a) where
-  size (MaxSet _ s) = size s
-
-instance (Memberable a (Set a)) => Memberable a (MaxSet a) where
-  a ∈ (MaxSet _ s) = a ∈ s
-  a ∉ (MaxSet _ s) = a ∉ s
-
-instance (Ord a, Bimaximum a, Unionable (Set a)) => Unionable (MaxSet a) where
-  (MaxSet m0 s0) ∪ (MaxSet m1 s1) =
-    mk $ un (s0 ∪ s1)
-
--- MaxSet (bimaximum [m0, m1]) (s0 ∪ s1)
-
-instance (Ord a, Bimaximum a, Intersectable (Set a)) => Intersectable (MaxSet a) where
-  (MaxSet m0 s0) ∩ (MaxSet m1 s1) =
-    mk $ un (s0 ∩ s1)
-
--- MaxSet (bimaximum [m0, m1]) (s0 ∩ s1)
-
-instance (Arbitrary Set a, Bimaximum a, Ord a) => Arbitrary MaxSet a where
-  arbitrary (MaxSet _ a) = arbitrary @Set a
-
-instance (Num a, Ord a) => VMirrorable (MaxSet (a, a)) where
-  (◓) (MaxSet (maxX, maxY) cs) = MaxSet (maxX, maxY) (setMap (second (maxY -)) cs)
-
-class Rotatable a where
-  (↺) :: a -> a
-  (↻) :: a -> a
-
-instance (Num a, Ord a) => Rotatable (MaxSet (a, a)) where
-  (↺) (MaxSet (maxX, maxY) cs) = MaxSet (maxY, maxX) (setMap (\(x, y) -> (maxY - y, x)) cs)
-  (↻) (MaxSet (maxX, maxY) cs) = MaxSet (maxY, maxX) (setMap (\(x, y) -> (y, maxX - x)) cs)
 
 class Trifunctor (f :: Type -> Type -> Type -> Type) where
   trimap :: (a -> a') -> (b -> b') -> (c -> c') -> f a b c -> f a' b' c'
@@ -1115,3 +1089,20 @@ instance ZipWithable NonEmpty where
 
 instance (Ord a) => MonoFunctor (Set a) where
   omap = S.map
+
+class Uniqueable f a where
+  uniq :: f a -> f a
+
+instance (Ord a) => Uniqueable Set a where
+  uniq = id
+
+instance (Eq a) => Uniqueable [] a where
+  uniq = nub
+
+instance (Eq a, Ord k) => Uniqueable (MinQ k) a where
+  uniq NullQ = (∅)
+  uniq q@(_ :<! NullQ) = q
+  uniq ((la, a) :<! q'@((_, b) :<! q))
+    | a ≡ b = uniq (qInsert (const la) a q)
+    | otherwise = qInsert (const la) a (uniq q')
+  uniq q = q

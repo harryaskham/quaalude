@@ -21,6 +21,7 @@ library
       Quaalude
       Quaalude.Alias
       Quaalude.Bits
+      Quaalude.BoundedSet
       Quaalude.Braket
       Quaalude.Collection
       Quaalude.Compose
@@ -34,6 +35,7 @@ library
       Quaalude.Lists
       Quaalude.LossQ
       Quaalude.Math
+      Quaalude.MaxSet
       Quaalude.Megaparsec
       Quaalude.QuasiSet
       Quaalude.Records

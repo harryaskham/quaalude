@@ -63,6 +63,7 @@ import GHC.TypeLits as X hiding (natVal, someNatVal)
 import Numeric.Search.Range as X
 import Quaalude.Alias as X
 import Quaalude.Bits as X
+import Quaalude.BoundedSet as X
 import Quaalude.Collection as X
 import Quaalude.Compose as X
 import Quaalude.Coord as X
@@ -75,6 +76,7 @@ import Quaalude.Grid as X
 import Quaalude.Lists as X
 import Quaalude.LossQ as X
 import Quaalude.Math as X
+import Quaalude.MaxSet as X
 import Quaalude.Megaparsec as X
 import Quaalude.QuasiSet as X
 import Quaalude.Records as X

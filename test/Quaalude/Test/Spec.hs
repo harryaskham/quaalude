@@ -64,3 +64,10 @@ spec = do
     it "mirrors MaxSet V" $ ((MaxSet @(Integer, Integer) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ◓) `shouldBe` (MaxSet (10, 5) (mkSet [(0, 5), (7, 3), (10, 0)]))
     it "rotates MaxSet CW" $ ((MaxSet @(Integer, Integer) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ↻) `shouldBe` (MaxSet (5, 10) (mkSet [(0, 10), (2, 3), (5, 0)]))
     it "rotates MaxSet CCW" $ ((MaxSet @(Integer, Integer) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ↺) `shouldBe` (MaxSet (5, 10) (mkSet [(5, 0), (3, 7), (0, 10)]))
+
+  describe ("BoundedSet") do
+    it "transposes BoundedSet" $ toOrigin ((BoundedSet @(Integer, Integer) (0, 0) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ⊤) `shouldBe` (BoundedSet (0, 0) (5, 10) (mkSet [(0, 0), (2, 7), (5, 10)]))
+    it "mirrors BoundedSet H" $ toOrigin ((BoundedSet @(Integer, Integer) (0, 0) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ◐) `shouldBe` (BoundedSet (0, 0) (10, 5) (mkSet [(10, 0), (3, 2), (0, 5)]))
+    it "mirrors BoundedSet V" $ toOrigin ((BoundedSet @(Integer, Integer) (0, 0) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ◓) `shouldBe` (BoundedSet (0, 0) (10, 5) (mkSet [(0, 5), (7, 3), (10, 0)]))
+    it "rotates BoundedSet CW" $ toOrigin ((BoundedSet @(Integer, Integer) (0, 0) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ↻) `shouldBe` (BoundedSet (0, 0) (5, 10) (mkSet [(0, 10), (2, 3), (5, 0)]))
+    it "rotates BoundedSet CCW" $ toOrigin ((BoundedSet @(Integer, Integer) (0, 0) (10, 5) (mkSet [(0, 0), (7, 2), (10, 5)])) ↺) `shouldBe` (BoundedSet (0, 0) (5, 10) (mkSet [(5, 0), (3, 7), (0, 10)]))
