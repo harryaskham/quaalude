@@ -265,11 +265,16 @@ mkSet = S.fromList
 unSet :: Set a -> [a]
 unSet = S.toList
 
-(<-|) :: (Ord a) => Set a -> a -> Set a
-(<-|) = flip S.insert
+class Insertable f a where
+  (<-|) :: f a -> a -> f a
+  default (<-|) :: f a -> a -> f a
+  (<-|) = flip (|->)
+  (|->) :: a -> f a -> f a
+  default (|->) :: a -> f a -> f a
+  (|->) = flip (<-|)
 
-(|->) :: (Ord a) => a -> Set a -> Set a
-(|->) = S.insert
+instance (Ord a) => Insertable Set a where
+  (|->) = S.insert
 
 (\\) :: (Ord a) => Set a -> Set a -> Set a
 (\\) = (S.\\)

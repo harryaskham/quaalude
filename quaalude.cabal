@@ -32,6 +32,7 @@ library
       Quaalude.Geometry
       Quaalude.Grid
       Quaalude.Lists
+      Quaalude.LossQ
       Quaalude.Math
       Quaalude.Megaparsec
       Quaalude.QuasiSet

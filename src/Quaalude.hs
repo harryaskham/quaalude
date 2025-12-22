@@ -73,6 +73,7 @@ import Quaalude.Encoding.JSON.TH as X
 import Quaalude.Geometry as X
 import Quaalude.Grid as X
 import Quaalude.Lists as X
+import Quaalude.LossQ as X
 import Quaalude.Math as X
 import Quaalude.Megaparsec as X
 import Quaalude.QuasiSet as X
