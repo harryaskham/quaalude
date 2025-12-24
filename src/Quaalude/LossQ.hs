@@ -90,3 +90,47 @@ instance (Eq a, Ord (LossF a)) => Uniqueable LossQ a where
 
 instance (Eq a, Ord (LossF a)) => Filterable LossQ a where
   (LossQ (LossFn loss) q) |-?-> f = LossQ (LossFn loss) (q |-?-> f)
+
+data LossSet a = LossSet (Set a) (LossQ a) deriving (Eq, Ord)
+
+deriving instance (Show a, Show (LossF a), Ord (LossF a)) => Show (LossSet a)
+
+type instance Element (LossSet a) = a
+
+instance (Semigroup (Set a), Semigroup (LossQ a)) => Semigroup (LossSet a) where
+  LossSet sa qa <> LossSet sb qb = LossSet (sa <> sb) (qa <> qb)
+
+instance (Monoid (Set a), Monoid (LossQ a)) => Monoid (LossSet a) where
+  mempty = LossSet mempty mempty
+
+instance (Sizable (Set a)) => Sizable (LossSet a) where
+  size (LossSet s _) = size s
+
+instance (a ~ LossF a, Ord a) => Mkable LossSet a where
+  mk xs = LossSet (mk xs) (mk xs)
+
+instance Unable LossSet where
+  un (LossSet s _) = F.toList s
+
+instance Foldable LossSet where
+  foldMap f (LossSet s _) = foldMap @Set f s
+
+instance (Ord a, a ~ LossF a, Arbitrary (MinQ (LossF a)) a, Ord (LossF a)) => Arbitrary LossSet a where
+  arbitrarySnoc (LossSet s q) =
+    let (a, as) = arbitrarySnoc @Set @a s
+     in (a, mk $ un as)
+  arb (LossSet s q) = arb @Set @a s
+
+instance (Ord a, Integral i, a ~ LossF a, Takeable i (MinQ (LossF a)) a) => Takeable i LossSet a where
+  take n ls = mk $ take n (un ls)
+
+instance (Ord a, Insertable Set a, Insertable LossQ a) => Insertable LossSet a where
+  a |-> (LossSet s q)
+    | a ∈ s = LossSet s q
+    | otherwise = LossSet (a |-> s) (a |-> q)
+
+instance (Eq a, Ord (LossF a)) => Uniqueable LossSet a where
+  uniq ls = ls
+
+instance (Eq a, a ~ LossF a, Ord (LossF a)) => Filterable LossSet a where
+  (LossSet s q) |-?-> f = mk $ un s |-?-> f
