@@ -71,6 +71,9 @@ instance Unable LossQ where
 instance Foldable LossQ where
   foldMap f (LossQ loss (q :: (MinQ (LossF a) a))) = foldMap @(MinQ (LossF a)) f q
 
+instance (Takeable n (MinQ (LossF a)) a) => Takeable n LossQ a where
+  take n (LossQ f q) = LossQ f (take n q)
+
 instance (Arbitrary (MinQ (LossF a)) a, Ord (LossF a)) => Arbitrary LossQ a where
   arbitrarySnoc (LossQ loss xs) =
     let (a, as) = arbitrarySnoc @(MinQ (LossF a)) @a xs
@@ -78,9 +81,6 @@ instance (Arbitrary (MinQ (LossF a)) a, Ord (LossF a)) => Arbitrary LossQ a wher
   arb (LossQ loss xs) = case xs of
     NullQ -> Nothing
     ((_, x) :<! _) -> Just x
-
-instance (Integral i, Takeable i (MinQ (LossF a)) a) => Takeable i LossQ a where
-  take n (LossQ loss q) = LossQ loss (take n q)
 
 instance (Ord (LossF a)) => Insertable LossQ a where
   a |-> (LossQ (LossFn loss) q) = LossQ (LossFn loss) (qInsert loss a q)

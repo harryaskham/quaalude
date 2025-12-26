@@ -801,6 +801,14 @@ instance (Integral n) => Takeable n V.Vector a where
 instance (Integral n) => Takeable n SQ.Seq a where
   take n = SQ.take (fromIntegral n)
 
+instance (Ord a, Integral n) => Takeable n Set a where
+  take n = mkSet ∘ take (fromIntegral n) ∘ unSet
+
+instance (Ord k, Integral n) => Takeable n (MinQ k) v where
+  take _ NullQ = PQ.empty
+  take 0 _ = PQ.empty
+  take n ((k, a) :<! q) = PQ.insert k a (take (n - 1) q)
+
 class Droppable n f a where
   drop :: n -> f a -> f a
 
