@@ -1184,7 +1184,7 @@ enumerate = enumFrom (toEnum 0)
 enum :: (Foldable f, Mkable f (a, b)) => (Num a, Enum a) => f b -> f (a, b)
 enum xs = mk (zip [0 ..] (F.toList xs))
 
-(..#) :: (Num a, Enum a) => [b] -> [(a, b)]
+(..#) :: (Foldable f, Mkable f (a, b)) => (Num a, Enum a) => f b -> f (a, b)
 (..#) = enum
 
 permutationMaps :: (Enum a, Ord a) => [Map a a]

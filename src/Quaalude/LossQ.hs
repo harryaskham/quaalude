@@ -5,6 +5,7 @@ import Data.Foldable qualified as F
 import Data.MonoTraversable
 import Data.Set qualified as S
 import Quaalude.Alias
+import Quaalude.BoundedSet
 import Quaalude.Collection
 import Quaalude.Tracers
 import Quaalude.Unary
@@ -23,6 +24,8 @@ type instance LossF Double = Double
 type instance LossF (a, b) = (a, b)
 
 type instance LossF (a, b, c) = (a, b, c)
+
+type instance LossF (BoundedSet (a, a)) = a
 
 data LossFn a = LossFn (a -> LossF a)
 
