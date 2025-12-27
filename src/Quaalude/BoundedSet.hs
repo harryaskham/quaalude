@@ -67,8 +67,8 @@ instance (Biminimum a, Bimaximum a, Ord a) => Filterable BoundedSet a where
 instance (Ord a, Biminimum a, Bimaximum a) => Semigroup (BoundedSet a) where
   (BoundedSet min0 max0 s0) <> (BoundedSet min1 max1 s1) = BoundedSet (biminimum [min0, min1]) (bimaximum [max0, max1]) (s0 <> s1)
 
-instance (Ord a, Biminimum a, Bimaximum a, Monoid a) => Monoid (BoundedSet a) where
-  mempty = BoundedSet mempty mempty mempty
+instance (Num a, Ord a, Biminimum a, Bimaximum a) => Monoid (BoundedSet a) where
+  mempty = BoundedSet 0 0 mempty
 
 instance SetMap BoundedSet where
   setMap f (BoundedSet min0 max0 s) = BoundedSet (f min0) (f max0) (setMap f s)
@@ -96,6 +96,9 @@ instance (Ord a, Biminimum a, Bimaximum a, Unionable (Set a)) => Unionable (Boun
 
 instance (Ord a, Biminimum a, Bimaximum a, Intersectable (Set a)) => Intersectable (BoundedSet a) where
   (BoundedSet min0 max0 s0) ∩ (BoundedSet min1 max1 s1) = mk $ un (s0 ∩ s1)
+
+instance (Ord a, Bimaximum a, Biminimum a, Differenceable Set a) => Differenceable BoundedSet a where
+  (BoundedSet _ _ s0) ∖ (BoundedSet _ _ s1) = mk $ un (s0 ∖ s1)
 
 instance (Arbitrary Set a, Biminimum a, Bimaximum a, Ord a) => Arbitrary BoundedSet a where
   arbitrary (BoundedSet _ _ a) = arbitrary @Set a

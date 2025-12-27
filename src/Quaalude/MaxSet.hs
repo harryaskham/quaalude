@@ -86,6 +86,9 @@ instance (Ord a, Bimaximum a, Unionable (Set a)) => Unionable (MaxSet a) where
 instance (Ord a, Bimaximum a, Intersectable (Set a)) => Intersectable (MaxSet a) where
   (MaxSet m0 s0) ∩ (MaxSet m1 s1) = mk $ un (s0 ∩ s1)
 
+instance (Ord a, Bimaximum a, Differenceable Set a) => Differenceable MaxSet a where
+  (MaxSet m0 s0) ∖ (MaxSet m1 s1) = mk $ un (s0 ∖ s1)
+
 instance (Arbitrary Set a, Bimaximum a, Ord a) => Arbitrary MaxSet a where
   arbitrary (MaxSet _ a) = arbitrary @Set a
 
