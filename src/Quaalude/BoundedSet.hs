@@ -61,7 +61,7 @@ instance (Transposable (Set (a, a))) => Transposable (BoundedSet (a, a)) where
 instance (Ord a) => Insertable BoundedSet a where
   a |-> BoundedSet min0 max0 s = BoundedSet (min min0 a) (max max0 a) (a |-> s)
 
-instance (Biminimum a, Bimaximum a, Ord a) => Filterable BoundedSet a where
+instance (Mkable BoundedSet a, Biminimum a, Bimaximum a, Ord a) => Filterable BoundedSet a where
   BoundedSet min max s |-?-> f = mk ∘ un $ s |-?-> f
 
 instance (Ord a, Biminimum a, Bimaximum a) => Semigroup (BoundedSet a) where
@@ -78,7 +78,8 @@ type instance Element (BoundedSet a) = a
 instance (Ord a) => MonoFunctor (BoundedSet a) where
   omap f (BoundedSet min0 max0 s) = BoundedSet (f min0) (f max0) (omap f s)
 
-instance (Biminimum a, Bimaximum a, Ord a) => Mkable BoundedSet a where
+instance (Monoid (BoundedSet a), Biminimum a, Bimaximum a, Ord a) => Mkable BoundedSet a where
+  mk [] = mempty
   mk as = BoundedSet (biminimum as) (bimaximum as) (mkSet as)
 
 instance Unable BoundedSet where
@@ -91,24 +92,24 @@ instance (Memberable a (Set a)) => Memberable a (BoundedSet a) where
   a ∈ (BoundedSet _ _ s) = a ∈ s
   a ∉ (BoundedSet _ _ s) = a ∉ s
 
-instance (Ord a, Biminimum a, Bimaximum a, Unionable (Set a)) => Unionable (BoundedSet a) where
+instance (Mkable BoundedSet a, Unionable (Set a)) => Unionable (BoundedSet a) where
   (BoundedSet min0 max0 s0) ∪ (BoundedSet min1 max1 s1) = mk $ un (s0 ∪ s1)
 
-instance (Ord a, Biminimum a, Bimaximum a, Intersectable (Set a)) => Intersectable (BoundedSet a) where
+instance (Mkable BoundedSet a, Intersectable (Set a)) => Intersectable (BoundedSet a) where
   (BoundedSet min0 max0 s0) ∩ (BoundedSet min1 max1 s1) = mk $ un (s0 ∩ s1)
 
-instance (Ord a, Bimaximum a, Biminimum a, Differenceable Set a) => Differenceable BoundedSet a where
+instance (Mkable BoundedSet a, Differenceable Set a) => Differenceable BoundedSet a where
   (BoundedSet _ _ s0) ∖ (BoundedSet _ _ s1) = mk $ un (s0 ∖ s1)
 
-instance (Arbitrary Set a, Biminimum a, Bimaximum a, Ord a) => Arbitrary BoundedSet a where
-  arbitrary (BoundedSet _ _ a) = arbitrary @Set a
+instance (Arbitrary [] a, Mkable BoundedSet a) => Arbitrary BoundedSet a where
+  arbitrarySnoc (BoundedSet _ _ s) = let (a : as) = un @Set @a s in (a, mk as)
 
-instance (Num a, Ord a) => HMirrorable (BoundedSet (a, a)) where
+instance (Mkable BoundedSet (a, a), Num a, Ord a) => HMirrorable (BoundedSet (a, a)) where
   (◐) (BoundedSet (minX, minY) (maxX, maxY) cs) = mk ∘ un $ (setMap (first negate) cs)
 
-instance (Num a, Ord a) => VMirrorable (BoundedSet (a, a)) where
+instance (Mkable BoundedSet (a, a), Num a, Ord a) => VMirrorable (BoundedSet (a, a)) where
   (◓) (BoundedSet (minX, minY) (maxX, maxY) cs) = mk . un $ (setMap (second negate) cs)
 
-instance (Num a, Ord a) => Rotatable (BoundedSet (a, a)) where
+instance (Mkable BoundedSet (a, a), Num a, Ord a) => Rotatable (BoundedSet (a, a)) where
   (↺) (BoundedSet (minX, minY) (maxX, maxY) cs) = mk ∘ un $ (setMap (\(x, y) -> (0 - y, x)) cs)
   (↻) (BoundedSet (minX, minY) (maxX, maxY) cs) = mk ∘ un $ (setMap (\(x, y) -> (y, 0 - x)) cs)
