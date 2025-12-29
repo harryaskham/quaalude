@@ -127,10 +127,10 @@ instance (Ord a, a ~ LossF a, Arbitrary (MinQ (LossF a)) a, Ord (LossF a)) => Ar
 instance (Ord a, Integral i, a ~ LossF a, Takeable i (MinQ (LossF a)) a) => Takeable i LossSet a where
   take n ls = mk $ take n (un ls)
 
-instance (Ord a, Insertable Set a, Insertable LossQ a) => Insertable LossSet a where
+instance (Ord a, Insertable Set a, Insertable LossQ a, Show a) => Insertable LossSet a where
   a |-> (LossSet s q)
     | a ∈ s = LossSet s q
-    | otherwise = LossSet (a |-> s) (a |-> q)
+    | otherwise = traceShow a $ LossSet (a |-> s) (a |-> q)
 
 instance (Eq a, Ord (LossF a)) => Uniqueable LossSet a where
   uniq ls = ls
