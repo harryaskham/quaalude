@@ -34,6 +34,10 @@ class Originable f a where
   origin :: a
   toOrigin :: f a -> f a
 
+instance (Ord a, Num a) => Originable Set (a, a) where
+  origin = (0, 0)
+  toOrigin s = let (minX, minY) = biminimum s in setMap (\(x, y) -> (x - minX, y - minY)) s
+
 instance (Ord a, Num a) => Originable BoundedSet (a, a) where
   origin = (0, 0)
   toOrigin bs@(BoundedSet (minX, minY) _ _) = omap (\(x, y) -> (x - minX, y - minY)) bs

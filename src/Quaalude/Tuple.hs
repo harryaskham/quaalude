@@ -627,8 +627,8 @@ instance (Eq a) => Memberable a (HomTup n a) where
 instance (Eq a) => Memberable a (Solo a) where
   a ∈ MkSolo a' = a == a'
 
-instance {-# OVERLAPS #-} (Eq a, Memberable a t, f a t ~ TupConsF a t, TupSnoc (f a t) a t, TupSnocF (f a t) ~ (a, t)) => Memberable a (f a t) where
-  a ∈ fat = let (a', t) = tupSnoc @(f a t) @a @t fat in a == a' || ((∈) @a @t a t)
+-- instance {-# OVERLAPS #-} (Eq a, Memberable a t, f a t ~ TupConsF a t, TupSnoc (f a t) a t, TupSnocF (f a t) ~ (a, t)) => Memberable a (f a t) where
+--   a ∈ fat = let (a', t) = tupSnoc @(f a t) @a @t fat in a == a' || ((∈) @a @t a t)
 
 -- instance {-# OVERLAPPING #-} Convable () (HomList 0 a) where
 --   co _ =

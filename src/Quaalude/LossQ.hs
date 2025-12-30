@@ -137,3 +137,73 @@ instance (Eq a, Ord (LossF a)) => Uniqueable LossSet a where
 
 instance (Eq a, a ~ LossF a, Ord (LossF a)) => Filterable LossSet a where
   (LossSet s q) |-?-> f = mk $ un s |-?-> f
+
+class IntLoss a where
+  loss :: a -> Integer
+  default loss :: (Sizable a) => a -> Integer
+  loss = size
+
+instance IntLoss Integer where
+  loss = id
+
+instance IntLoss Int where
+  loss = fromIntegral
+
+instance IntLoss (Set a)
+
+instance IntLoss [a]
+
+instance IntLoss (Seq a)
+
+instance IntLoss (Map k v)
+
+instance IntLoss (BoundedSet a)
+
+instance (IntLoss a, IntLoss b) => IntLoss (a, b) where
+  loss (a, b) = loss a + loss b
+
+instance (IntLoss a, IntLoss b, IntLoss c) => IntLoss (a, b, c) where
+  loss (a, b, c) = loss a + loss b + loss c
+
+data IntLossSet a = IntLossSet (Set a) (MinQ Integer a)
+
+type instance MagnitudeF (IntLossSet a) = Integer
+
+deriving instance (Show a) => Show (IntLossSet a)
+
+deriving instance (Eq a) => Eq (IntLossSet a)
+
+deriving instance (Ord a) => Ord (IntLossSet a)
+
+instance Foldable IntLossSet where
+  foldMap f (IntLossSet s _) = foldMap f s
+
+instance (Ord a, IntLoss a) => Mkable IntLossSet a where
+  mk xs = IntLossSet (mk xs) (mkQ [(loss x, x) | x <- xs])
+
+instance Unable IntLossSet where
+  un (IntLossSet s q) = F.toList q
+
+deriving instance Sizable (IntLossSet a)
+
+deriving instance Semigroup (IntLossSet a)
+
+deriving instance Monoid (IntLossSet a)
+
+instance (IntLoss a, Mkable IntLossSet a, Ord a) => Arbitrary IntLossSet a where
+  arbitrarySnoc (IntLossSet s q) = let (a, s') = arbitrarySnoc s in (a, mk $ un s')
+
+deriving instance Filterable IntLossSet a
+
+deriving instance Takeable i IntLossSet a
+
+instance Uniqueable IntLossSet a where
+  uniq = id
+
+instance (IntLoss a, Ord a) => Insertable IntLossSet a where
+  a |-> ls@(IntLossSet s q)
+    | a ∈ s = ls
+    | otherwise = IntLossSet (a |-> s) (qInsert (loss @a) a q)
+
+instance (Mkable IntLossSet a, Ord a) => Differenceable IntLossSet a where
+  (IntLossSet s q) ∖ (IntLossSet s' q') = mk ∘ un $ s ∖ s'

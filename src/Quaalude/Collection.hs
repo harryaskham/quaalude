@@ -279,6 +279,9 @@ class Insertable f a where
 instance Insertable [] a where
   (|->) = (:)
 
+instance Insertable Seq a where
+  (|->) = (<|)
+
 instance (Ord a) => Insertable Set a where
   (|->) = S.insert
 
@@ -292,6 +295,9 @@ instance (Eq a) => Differenceable [] a where
 
 instance (Ord a) => Differenceable Set a where
   (\\) = (S.\\)
+
+instance (Eq a) => Differenceable Seq a where
+  a \\ b = SQ.fromList $ F.toList a \\ F.toList b
 
 class Sizable a where
   size :: (Integral i) => a -> i
@@ -899,6 +905,8 @@ instance Arbitrary [] a where
 
 instance (Ord a) => Arbitrary Set a
 
+instance Arbitrary Seq a
+
 instance (Ord k) => Arbitrary (Map k) v where
   arbitrarySnoc = bimap snd mkMap . arbitrarySnoc . unMap
 
@@ -1010,31 +1018,27 @@ instance Transposable [[a]] where
   (⊤) = transpose
 
 instance (Ord a) => Transposable (Set (a, a)) where
-  (⊤) cs = setMap Prelude.swap cs
+  (⊤) = setMap Prelude.swap
 
 class HMirrorable a where
   (◐) :: a -> a
 
-instance (Num a, Ord a) => HMirrorable (Set (a, a)) where
-  (◐) cs
-    | cs ≡ (∅) = cs
-    | otherwise =
-        let maxX = maximum (fst <$> un cs)
-         in setMap (first (maxX -)) cs
-
 class VMirrorable a where
   (◓) :: a -> a
 
-instance (Num a, Ord a) => VMirrorable (Set (a, a)) where
-  (◓) cs
-    | cs ≡ (∅) = cs
-    | otherwise =
-        let maxY = maximum (snd <$> un cs)
-         in setMap (second (maxY -)) cs
+instance (Mkable Set (a, a), Num a, Ord a) => VMirrorable (Set (a, a)) where
+  (◓) = setMap (second negate)
 
 class Rotatable a where
   (↺) :: a -> a
   (↻) :: a -> a
+
+instance (Mkable Set (a, a), Num a, Ord a) => HMirrorable (Set (a, a)) where
+  (◐) = setMap (first negate)
+
+instance (Mkable Set (a, a), Num a, Ord a) => Rotatable (Set (a, a)) where
+  (↺) = setMap (\(x, y) -> (0 - y, x))
+  (↻) = setMap (\(x, y) -> (y, 0 - x))
 
 class Bimaximum a where
   bimaximum :: (Foldable f) => f a -> a
@@ -1106,6 +1110,9 @@ instance (Ord a) => Uniqueable Set a where
 
 instance (Eq a) => Uniqueable [] a where
   uniq = nub
+
+instance (Eq a) => Uniqueable Seq a where
+  uniq = mk ∘ nub ∘ un
 
 instance (Eq a, Ord k) => Uniqueable (MinQ k) a where
   uniq NullQ = (∅)
