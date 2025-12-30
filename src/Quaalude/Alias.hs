@@ -189,10 +189,13 @@ infixr 0 ⇱
 
 infixr 0 ⇲
 
-(#) :: (Monad m) => a -> m a
-(#) = return
+(#) :: (Applicative m) => a -> m a
+(#) = pure
 
 infixl 0 #
+
+φ :: (Applicative m) => a -> m a
+φ = pure
 
 type k :|-> v = Map k v
 

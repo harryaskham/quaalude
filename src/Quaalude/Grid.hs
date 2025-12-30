@@ -250,8 +250,8 @@ type G = Grid'
 
 instance Sizable (Grid' k a)
 
-instance (MagnitudeF (Grid' k a) ~ Integer, Coord' Int k k, Ord k, GridCell a) => Magnitude (Grid' k a) where
-  (|.|) = (|.|) ∘ unGrid
+instance (Integral i, MagnitudeF (Grid' k a) ~ i, Coord' Int k k, Coord' i k k, Ord k, GridCell a) => Magnitude (Grid' k a) where
+  (|.|) = fromIntegral ∘ (|.|) ∘ unGrid
 
 newtype PrettyGrid g = PrettyGrid g
 

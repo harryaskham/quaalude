@@ -10,7 +10,11 @@ import Prelude hiding (filter)
 class Box f a where
   box :: (a, a) -> (a, a) -> f (a, a)
 
-instance (Ord a, Enum a, Mkable f (a, a)) => Box f a where
+  box₀ :: (a, a) -> f (a, a)
+  default box₀ :: (Num a) => (a, a) -> f (a, a)
+  box₀ (w, h) = (box (0, 0) (w - 1, h - 1))
+
+instance (Ord a, Num a, Enum a, Mkable f (a, a)) => Box f a where
   box (x0, y0) (x1, y1) = mk [(x, y) | x <- range x0 x1, y <- range y0 y1]
 
 -- ((x, a), (x, b)) is line at x from a to b including (x,a) and (x,b)

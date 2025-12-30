@@ -216,13 +216,22 @@ instance {-# OVERLAPPING #-} Convable String Text where
 
 infixl 1 ⊏⊐
 
+ͼͽ :: (Convable a c) => a -> c
+ͼͽ = co
+
 (⊏) :: (Unable f) => f a -> [a]
 (⊏) = un
 
 infixl 1 ⊏
 
+ͽ :: (Unable f) => f a -> [a]
+ͽ = un
+
 (⊐) :: (Mkable f a) => [a] -> f a
 (⊐) = mk
+
+ͼ :: (Foldable f, Mkable g a) => f a -> g a
+ͼ = mk ∘ F.toList
 
 infixl 1 ⊐
 
@@ -672,14 +681,54 @@ mkQ = PQ.fromList
 mkQ₁ :: (Ord k) => (a -> k) -> a -> PQ.MinPQueue k a
 mkQ₁ loss a = mkQ [(loss a, a)]
 
+mkK₁ :: (MkableKey f, Ord k) => k -> a -> PQ.MinPQueue k a
+mkK₁ k a = mkKey [(k, a)]
+
+class ZeroKey k where
+  zeroKey :: k
+
+instance ZeroKey Int where
+  zeroKey = 0
+
+instance ZeroKey Integer where
+  zeroKey = 0
+
+instance (ZeroKey a, ZeroKey b) => ZeroKey (a, b) where
+  zeroKey = (zeroKey, zeroKey)
+
+instance (ZeroKey a, ZeroKey b, ZeroKey c) => ZeroKey (a, b, c) where
+  zeroKey = (zeroKey, zeroKey, zeroKey)
+
+mkℤ₁ :: (Ord k, ZeroKey k, MkableKey f) => a -> f k a
+mkℤ₁ a = mkKey [(zeroKey, a)]
+
 qInsert :: (Ord k) => (a -> k) -> a -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 qInsert loss a q = q |. (loss a, a)
+
+(<-||) :: (Ord k) => PQ.MinPQueue k a -> ((a -> k), [a]) -> PQ.MinPQueue k a
+q <-|| (loss, as) = qAppend loss as q
+
+infixl 1 <-||
+
+(||->) :: (Ord k) => ((a -> k), [a]) -> PQ.MinPQueue k a -> PQ.MinPQueue k a
+(loss, as) ||-> q = qAppend loss as q
+
+infixr 1 ||->
 
 qAppend :: (Ord k) => (a -> k) -> [a] -> PQ.MinPQueue k a -> PQ.MinPQueue k a
 qAppend loss as q = foldl' (\q a -> qInsert loss a q) q as
 
 nullQ :: PQ.MinPQueue k a -> Bool
 nullQ = PQ.null
+
+class Emptyable fa where
+  (∅?) :: fa -> Bool
+
+instance (Eq (f a), Monoid (f a)) => Emptyable (f a) where
+  (∅?) = (== (∅))
+
+pattern Φ :: (Emptyable (f a)) => f a
+pattern Φ <- ((∅?) -> True)
 
 type MinQ = PQ.MinPQueue
 
@@ -889,6 +938,9 @@ class Arbitrary f a where
   default arbitrary :: f a -> a
   arbitrary = fst . arbitrarySnoc
 
+  (⟒) :: f a -> a
+  (⟒) = arbitrary
+
   arbitrarySnoc :: f a -> (a, f a)
   default arbitrarySnoc :: (Unable f, Mkable f a) => f a -> (a, f a)
   arbitrarySnoc = second mk . arbitrarySnoc @[] . un
@@ -898,6 +950,11 @@ class Arbitrary f a where
   arb as = case F.toList as of
     [] -> Nothing
     _ -> Just (arbitrary as)
+
+traceArb :: (Arbitrary f a, Show a) => f a -> f a
+traceArb as = case arb as of
+  Nothing -> traceShow "traceArb: empty" as
+  Just a -> traceShow ("traceArb: " <> show a) $ as
 
 instance Arbitrary [] a where
   arbitrarySnoc [] = error "arbitrary: no elements"
@@ -923,6 +980,21 @@ rlen Incl (a, b) = b - a + 1
 rlen Excl (a, b) = b - a
 
 type a |-| b = RangeOf a
+
+(⊯) :: a -> a -> RangeOf2 a a
+a ⊯ b = RangeOf Incl (a, b)
+
+infixl 4 ⊯
+
+(⊫) :: a -> a -> RangeOf2 a a
+a ⊫ b = RangeOf Excl (a, b)
+
+infixl 4 ⊫
+
+(⥅) :: (Num a) => a -> a -> RangeOf2 a a
+a ⥅ n = RangeOf Excl (a, a + n)
+
+infixl 4 ⥅
 
 data RangeOf2 a b = RangeOf RangeSize (a, b) deriving (Show, Eq)
 
@@ -983,11 +1055,17 @@ class Magnitude a where
 
 xs |?| p = ([x | x <- xs, p x] |.|)
 
-a |=| b = (a |.|) ≡ (b |.|)
-
 a |≡| b = (a |.|) ≡ (b |.|)
 
 a |≢| b = (a |.|) ≢ (b |.|)
+
+a |≤| b = (a |.|) ≤ (b |.|)
+
+a |≥| b = (a |.|) ≥ (b |.|)
+
+a ¦<¦ b = (a |.|) < (b |.|)
+
+a ¦>¦ b = (a |.|) > (b |.|)
 
 instance (Integral a) => Magnitude (RangeOf a) where
   (|.|) (RangeOf rs ab) = rlen rs ab
@@ -1086,6 +1164,10 @@ instance Middle [] where
 
 snoc :: [a] -> (a, [a])
 snoc (x : xs) = (x, xs)
+
+(⇑) = zip
+
+infix 7 ⇑
 
 class ZipWithable f where
   (⤊) :: (ZipWithable f) => (f a, f b) -> (a -> b -> c) -> f c

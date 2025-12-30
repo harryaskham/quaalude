@@ -173,10 +173,6 @@ instance Coord' Integer Integer (Integer, Integer) where
   fromXY (x, y) = (fromIntegral x, fromIntegral y)
   toXY (a, b) = (fromIntegral a, fromIntegral b)
 
--- instance Coord' Int Int (Int, Int) where
---   fromXY (x, y) = (fromIntegral x, fromIntegral y)
---   toXY (a, b) = (fromIntegral a, fromIntegral b)
-
 instance Coord' Rational Rational (Rational, Rational) where
   fromXY (x, y) = (fromRational x, fromRational y)
   toXY (a, b) = (toRational a, toRational b)

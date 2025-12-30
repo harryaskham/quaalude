@@ -32,7 +32,14 @@ import Prelude hiding (drop, filter, splitAt, take)
 
 class Originable f a where
   origin :: a
+
   toOrigin :: f a -> f a
+  default toOrigin :: f a -> f a
+  toOrigin = (⌞)
+
+  (⌞) :: f a -> f a
+  default (⌞) :: f a -> f a
+  (⌞) = toOrigin
 
 instance (Ord a, Num a) => Originable Set (a, a) where
   origin = (0, 0)

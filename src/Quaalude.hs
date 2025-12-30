@@ -81,6 +81,7 @@ import Quaalude.Megaparsec as X
 import Quaalude.QuasiSet as X
 import Quaalude.Records as X
 import Quaalude.Reducible as X
+import Quaalude.Shape as X
 import Quaalude.Show as X
 import Quaalude.Solve as X
 import Quaalude.TH as X
