@@ -34,7 +34,7 @@
   <!-- gen:showcase -->
 <pre class="code" tabindex="0"><code><span class="kw">module</span> <span class="ty">Day6</span> (part1, part2) <span class="kw">where</span>
 
-walk <span class="op">::</span> <span class="ty">Grid</span> <span class="ty">Char</span> <span class="op">-&gt;</span> <span class="ty">Ѓ</span> (<span class="ty">Set</span> (<span class="ty">ℤ₆₄</span> <span class="op">×</span> <span class="ty">ℤ₆₄</span>)) (<abbr title="? :: a -&gt; QuestionableF a -&gt; QuestionableFR a   (Alias)"><span class="op">?</span></abbr>)
+walk <span class="op">::</span> <span class="ty">Grid</span> <span class="ty">Char</span> <span class="op">-&gt;</span> <span class="ty">Ѓ</span> (<span class="ty">Set</span> (<span class="ty">ℤ₆₄</span> <span class="op">×</span> <span class="ty">ℤ₆₄</span>)) (<span class="op">?</span>)
 walk g <span class="op">=</span> go (<abbr title="∅ :: Monoid a =&gt; a   (Collection)"><span class="op">∅</span></abbr>) def <span class="op">=&lt;&lt;</span> (<abbr title="gridFindOne :: Griddable Identity g k a =&gt; a -&gt; g k a -&gt; Maybe k   (Grid)">gridFindOne</abbr> <span class="st">&#x27;^&#x27;</span> g)
   <span class="kw">where</span>
     go seen d c
@@ -43,10 +43,10 @@ walk g <span class="op">=</span> go (<abbr title="∅ :: Monoid a =&gt; a   (Col
       <span class="op">|</span> g <abbr title="|? :: f k v -&gt; k -&gt; Maybe v   (Collection)"><span class="op">|?</span></abbr> <abbr title="move :: (Num c, Num i, Coord&#x27; i c (c, c)) =&gt; Dir2 -&gt; i -&gt; (c, c) -&gt; (c, c)   (Coord)">move</abbr> <span class="op">@</span><span class="ty">ℤ₆₄</span> d <span class="nu">1</span> c <span class="op">==</span> <span class="ty">Just</span> <span class="st">&#x27;#&#x27;</span> <span class="op">=</span> go seen (<abbr title="turnCW :: d -&gt; d   (Coord)">turnCW</abbr> d) c
       <span class="op">|</span> otherwise <span class="op">=</span> go ((c, d) <abbr title="|-&gt; :: a -&gt; f a -&gt; f a   (Collection)"><span class="op">|-&gt;</span></abbr> seen) d (<abbr title="move :: (Num c, Num i, Coord&#x27; i c (c, c)) =&gt; Dir2 -&gt; i -&gt; (c, c) -&gt; (c, c)   (Coord)">move</abbr> <span class="op">@</span><span class="ty">ℤ₆₄</span> d <span class="nu">1</span> c)
 
-part1 <span class="op">::</span> <span class="ty">Ѓ</span> <span class="ty">ℤ</span> (<abbr title="? :: a -&gt; QuestionableF a -&gt; QuestionableFR a   (Alias)"><span class="op">?</span></abbr>)
+part1 <span class="op">::</span> <span class="ty">Ѓ</span> <span class="ty">ℤ</span> (<span class="op">?</span>)
 part1 <span class="op">=</span> <abbr title="size :: Integral i =&gt; a -&gt; i   (Collection)">size</abbr> <span class="op">&lt;$&gt;</span> walk <span class="op">$</span>(<abbr title="grid :: Int -&gt; Q Exp   (TH)">grid</abbr> <span class="nu">6</span>)
 
-part2 <span class="op">::</span> <span class="ty">Ѓ</span> <span class="ty">ℤ</span> (<abbr title="? :: a -&gt; QuestionableF a -&gt; QuestionableFR a   (Alias)"><span class="op">?</span></abbr>)
+part2 <span class="op">::</span> <span class="ty">Ѓ</span> <span class="ty">ℤ</span> (<span class="op">?</span>)
 part2 <span class="op">=</span>
   <span class="kw">let</span> g <span class="op">=</span> <span class="op">$</span>(<abbr title="grid :: Int -&gt; Q Exp   (TH)">grid</abbr> <span class="nu">6</span>)
       walk&#x27; <span class="op">=</span> (((<abbr title="as :: from -&gt; to   (Util)"><span class="kw">as</span></abbr> <span class="op">@</span><span class="ty">ℤ</span> <span class="op">.</span> isNothing <span class="op">.</span> walk <span class="op">.</span> (g <abbr title="||. :: Griddable Identity g k a =&gt; g k a -&gt; (k, a) -&gt; g k a   (Grid)"><span class="op">||.</span></abbr>) <span class="op">.</span> (,<span class="st">&#x27;#&#x27;</span>)) <span class="op">&gt;&gt;&gt;</span>) <span class="op">.</span> (<span class="op">+</span>))
