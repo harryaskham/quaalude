@@ -1,0 +1,118 @@
+{
+ "alias-int": {
+  "input": ":kind! ℤ",
+  "output": "ℤ :: *\n= Integer"
+ },
+ "alias-int64": {
+  "input": ":kind! ℤ₆₄",
+  "output": "ℤ₆₄ :: *\n= Int"
+ },
+ "alias-pair": {
+  "input": ":kind! ℤ²",
+  "output": "ℤ² :: *\n= (Integer, Integer)"
+ },
+ "alias-maybe": {
+  "input": ":kind! Ѓ ℤ (?)",
+  "output": "Ѓ ℤ (?) :: *\n= Maybe Integer"
+ },
+ "mk-set": {
+  "input": "mk [3, 1, 2, 1] :: Set ℤ",
+  "output": "fromList [1,2,3]"
+ },
+ "un-set": {
+  "input": "un (mk [3, 1, 2, 1] :: Set ℤ)",
+  "output": "[1,2,3]"
+ },
+ "co-map": {
+  "input": "co [(1, 'a'), (2, 'b')] :: Map ℤ Char",
+  "output": "fromList [(1,'a'),(2,'b')]"
+ },
+ "sort-up": {
+  "input": "(🎜) [3, 1, 2]",
+  "output": "[1,2,3]"
+ },
+ "sort-down": {
+  "input": "(🎝) [3, 1, 2]",
+  "output": "[3,2,1]"
+ },
+ "cond": {
+  "input": "(2 > 1) ??? \"yes\" $ \"no\"",
+  "output": "\"yes\""
+ },
+ "parse-numbers": {
+  "input": "\"move 10 to -3, then 42\" |- numbers :: [ℤ]",
+  "output": "[10,-3,42]"
+ },
+ "both": {
+  "input": "both (+ 1) (1, 2)",
+  "output": "(2,3)"
+ },
+ "apply-pair": {
+  "input": "(+) $@ (2, 3)",
+  "output": "5"
+ },
+ "dup": {
+  "input": "dup 'x'",
+  "output": "('x','x')"
+ },
+ "concat": {
+  "input": "(<>!) [\"ab\", \"cd\"]",
+  "output": "\"abcd\""
+ },
+ "member": {
+  "input": "3 ∈ (mk [1, 2, 3] :: Set ℤ)",
+  "output": "True"
+ },
+ "insert": {
+  "input": "3 |-> (mk [1] :: Set ℤ)",
+  "output": "fromList [1,3]"
+ },
+ "size": {
+  "input": "size (mk \"hello\" :: Set Char) :: ℤ",
+  "output": "4"
+ },
+ "lookup": {
+  "input": "(mkMap [(1, 'a')] :: Map ℤ Char) |? 2",
+  "output": "Nothing"
+ },
+ "index": {
+  "input": "(mkMap [(1, 'a')] :: Map ℤ Char) |! 1",
+  "output": "'a'"
+ },
+ "set-key": {
+  "input": "(mkMap [(1, 'a')] :: Map ℤ Char) |. (2, 'b')",
+  "output": "fromList [(1,'a'),(2,'b')]"
+ },
+ "as-bool": {
+  "input": "as @ℤ True",
+  "output": "1"
+ },
+ "grid-let": {
+  "input": "let g = readGrid \"..#\\n#..\\n\" :: Grid Char",
+  "output": ""
+ },
+ "grid-get": {
+  "input": "g ||? (2, 0)",
+  "output": "Just '#'"
+ },
+ "grid-find": {
+  "input": "gridFindOne '#' g",
+  "output": "Just (0,1)"
+ },
+ "grid-max": {
+  "input": "maxXY g",
+  "output": "(2,1)"
+ },
+ "turn": {
+  "input": "turnCW DirUp",
+  "output": "→"
+ },
+ "move": {
+  "input": "move DirUp (2 :: Int) (5, 5 :: Int)",
+  "output": "(5,3)"
+ },
+ "manhattan": {
+  "input": "manhattan (1, 2) (4, 6 :: Int)",
+  "output": "7"
+ }
+}

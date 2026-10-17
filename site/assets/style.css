@@ -1,0 +1,93 @@
+/* quaalude — a late-night maths notebook. Dark aubergine, Fraunces for headings, Instrument Sans
+   for prose, JuliaMono (subset to this site's characters) for code, so every ℤ, ∘ and ⊏⊐ renders
+   in one typeface. Acid lime marks symbols, pink marks types. */
+
+:root {
+  --page-bg: #18121f; --page-text: #e6dfee; --page-muted: #a89db6; --page-line: #2f2639;
+  --page-accent: #c9f36b; --strong: #faf6ff; --surface: #1f1828; --raise: #271f31;
+  --code-bg: #120d18; --code-text: #e9e2f2;
+  --page-ui: "Instrument Sans", system-ui, sans-serif;
+  --display: "Fraunces", Georgia, serif;
+  --mono: "JuliaMono", ui-monospace, monospace;
+  --pink: #ff86c8; --cyan: #7fdcf0; --amber: #ffcf7a;
+}
+
+a { color: var(--page-accent); }
+.topbar { color: var(--page-muted); }
+header.intro h1 { font-size: clamp(56px, 9vw, 112px); font-weight: 600; font-style: italic; letter-spacing: -0.03em;
+  font-variation-settings: "SOFT" 100, "WONK" 1; color: var(--page-accent); line-height: 1; }
+h2 { font-weight: 600; font-variation-settings: "SOFT" 50; }
+h2::before { content: "λ "; color: var(--pink); font-style: italic; }
+:not(pre) > code { background: var(--raise); color: var(--strong); }
+
+pre { background: var(--code-bg); border: 1px solid var(--page-line); }
+pre.code { font-size: 15px; line-height: 1.6; }
+pre .kw { color: var(--pink); }
+pre .ty { color: var(--cyan); }
+pre .st { color: var(--amber); }
+pre .nu { color: var(--amber); }
+pre .cm { color: var(--page-muted); font-style: italic; }
+pre .pr { color: var(--page-muted); }
+pre .op { color: var(--page-accent); }
+pre abbr { text-decoration: underline dotted color-mix(in srgb, var(--page-accent) 55%, transparent); text-underline-offset: 3px; cursor: help; }
+pre.ghci .p { color: var(--pink); }
+pre.ghci .p::before { content: none; }
+pre.ghci .o { color: var(--page-accent); }
+
+table { font-size: 14.5px; }
+th, td { border-bottom-color: var(--page-line); }
+code.sym { font-size: 18px; color: var(--page-accent); background: none; padding: 0; }
+td code { white-space: pre-wrap; }
+td.mod { font: 13px/1.5 var(--mono); color: var(--page-muted); white-space: nowrap; }
+td.num { font: 600 15px/1.5 var(--mono); color: var(--strong); text-align: right; padding-right: 18px; }
+table.usage { min-width: 720px; width: auto; }
+table.usage td, table.usage th, table.gloss td, table.gloss th { vertical-align: baseline; padding-right: 22px; }
+table.usage th.num { text-align: right; }
+table.notation th { font: 500 12.5px/1.5 var(--mono); color: var(--page-muted); width: 6.5em; padding-top: 9px; }
+table.notation code { font-size: 15px; }
+
+ul.costs li { margin-bottom: 12px; }
+ul.costs b { color: var(--strong); }
+
+.filter { display: flex; gap: 12px; align-items: center; margin: 6px 0 4px; max-width: 520px; }
+.filter span { font: 500 13px/1 var(--mono); color: var(--page-muted); }
+.filter input { flex: 1; min-width: 0; padding: 9px 12px; font: 15px/1.2 var(--mono); color: var(--strong);
+  background: var(--code-bg); border: 1px solid var(--page-line); border-radius: 8px; }
+.filter input:focus { outline: 2px solid var(--page-accent); outline-offset: 1px; }
+.ref details.mod { border-top: 1px solid var(--page-line); }
+.ref summary { display: grid; grid-template-columns: minmax(14em, auto) 3em 1fr; gap: 4px 14px; align-items: baseline;
+  padding: 11px 0; cursor: pointer; list-style: none; }
+.ref summary::-webkit-details-marker { display: none; }
+.ref summary .name { font: 600 14.5px/1.4 var(--mono); color: var(--strong); }
+.ref summary .name::before { content: "▸ "; color: var(--page-accent); }
+.ref details[open] summary .name::before { content: "▾ "; }
+.ref summary .count { font: 13px/1.4 var(--mono); color: var(--page-muted); text-align: right; }
+.ref summary .desc { font-size: 14.5px; color: var(--page-muted); }
+.ref .entries { margin: 0 0 14px; padding: 10px 14px; background: var(--code-bg); border-radius: 8px; overflow-x: auto; }
+.ref .e { white-space: pre; font: 13.5px/1.55 var(--mono); padding: 3px 0; border-bottom: 1px solid #ffffff08; }
+.ref .e code { background: none; padding: 0; color: var(--code-text); font-size: inherit; }
+
+@media (max-width: 640px) {
+  .ref summary { grid-template-columns: 1fr auto; }
+  .ref summary .desc { grid-column: 1 / -1; }
+  header.intro h1 { font-size: 64px; }
+}
+
+@media (max-width: 640px) {
+  /* Name tables become one card per name: name and module on a line, the type below at full width. */
+  table.gloss, table.usage { min-width: 0; width: 100%; }
+  table.gloss thead, table.usage thead { display: none; }
+  table.gloss caption, table.usage caption { display: block; }
+  table.gloss tbody, table.usage tbody { display: block; }
+  table.gloss tr, table.usage tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 8px 0;
+    border-bottom: 1px solid var(--page-line); }
+  table.gloss td, table.usage td { display: block; border: 0; padding: 0; }
+  table.gloss td:nth-child(2), table.usage td:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+  table.usage td.num { grid-column: 2; grid-row: 1; text-align: right; padding: 0; }
+  table.usage td.num::after { content: " solutions"; font-weight: 400; color: var(--page-muted); font-size: 12px; }
+  table.usage td.mod { grid-column: 1; grid-row: 3; }
+  table.gloss td.mod { grid-column: 2; grid-row: 1; text-align: right; }
+  table.notation, table.notation tbody, table.notation tr, table.notation th, table.notation td { display: block; }
+  table.notation th { padding: 10px 0 2px; border: 0; width: auto; }
+  table.notation td { padding: 0 0 8px; }
+}

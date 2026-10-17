@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>quaalude · a custom Haskell prelude for Advent of Code</title>
+<meta name="description" content="quaalude is a replacement Prelude for Haskell, written for Advent of Code: Relude and about sixty libraries plus thirty modules of collections, grids, coordinates, parsing, search and Z3 helpers behind a dense Unicode notation, so a solution needs no imports. A guide with GHCi examples, the names real solutions use most, and a reference generated from the compiled library.">
+<meta name="theme-color" content="#18121f">
+<meta name="color-scheme" content="dark">
+<meta name="a.skh.am:group" content="libraries">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+<nav class="topbar" aria-label="Site">
+  <a href="https://a.skh.am/all/">a.skh.am/all</a><span aria-hidden="true">/</span><span>quaalude</span>
+  <a class="src" href="https://github.com/harryaskham/quaalude">Source on GitHub</a>
+</nav>
+
+<main id="main">
+<header class="intro">
+  <h1>quaalude</h1>
+  <p class="lede">A replacement Prelude for Haskell, written for <a href="https://a.skh.am/advent/">Advent of Code</a>. It re-exports Relude and dozens of other libraries and adds thirty modules of its own (collections, grids, coordinates, parsing, search, Z3, tracing) behind a dense Unicode notation, so that a solution needs no imports and reads close to the way you would write it on paper.</p>
+  <p>It is a personal tool and deliberately opinionated: symbols over words, overlapping instances, type-level tricks. This page explains how it works and how it reads, with every example run in GHCi against the compiled library, and ends with a reference generated from it.</p>
+</header>
+
+<section class="part" aria-labelledby="h-read">
+  <h2 id="h-read">A solution, read slowly</h2>
+  <p>This is the whole of one solution, 2024's day 6: walk a guard around a grid, turning right at obstacles, and (part 2) count the places where one new obstacle would trap it in a loop. There are no imports: everything comes from quaalude, installed as the Prelude. Hover over a name for its type.</p>
+  <!-- gen:showcase -->
+<pre class="code" tabindex="0"><code><span class="kw">module</span> <span class="ty">Day6</span> (part1, part2) <span class="kw">where</span>
+
+walk <span class="op">::</span> <span class="ty">Grid</span> <span class="ty">Char</span> <span class="op">-&gt;</span> <span class="ty">Ѓ</span> (<span class="ty">Set</span> (<span class="ty">ℤ₆₄</span> <span class="op">×</span> <span class="ty">ℤ₆₄</span>)) (<abbr title="? :: a -&gt; QuestionableF a -&gt; QuestionableFR a   (Alias)"><span class="op">?</span></abbr>)
+walk g <span class="op">=</span> go (<abbr title="∅ :: Monoid a =&gt; a   (Collection)"><span class="op">∅</span></abbr>) def <span class="op">=&lt;&lt;</span> (<abbr title="gridFindOne :: Griddable Identity g k a =&gt; a -&gt; g k a -&gt; Maybe k   (Grid)">gridFindOne</abbr> <span class="st">&#x27;^&#x27;</span> g)
+  <span class="kw">where</span>
+    go seen d c
+      <span class="op">|</span> (c, d) <abbr title="∈ :: a -&gt; b -&gt; Bool   (Collection)"><span class="op">∈</span></abbr> seen <span class="op">=</span> <span class="ty">Nothing</span>
+      <span class="op">|</span> c <abbr title="∉ :: a -&gt; b -&gt; Bool   (Collection)"><span class="op">∉</span></abbr> g <span class="op">=</span> <span class="ty">Just</span> <span class="op">$</span> <abbr title="setMap :: Ord b =&gt; (a -&gt; b) -&gt; f a -&gt; f b   (Collection)">setMap</abbr> fst seen
+      <span class="op">|</span> g <abbr title="|? :: f k v -&gt; k -&gt; Maybe v   (Collection)"><span class="op">|?</span></abbr> <abbr title="move :: (Num c, Num i, Coord&#x27; i c (c, c)) =&gt; Dir2 -&gt; i -&gt; (c, c) -&gt; (c, c)   (Coord)">move</abbr> <span class="op">@</span><span class="ty">ℤ₆₄</span> d <span class="nu">1</span> c <span class="op">==</span> <span class="ty">Just</span> <span class="st">&#x27;#&#x27;</span> <span class="op">=</span> go seen (<abbr title="turnCW :: d -&gt; d   (Coord)">turnCW</abbr> d) c
+      <span class="op">|</span> otherwise <span class="op">=</span> go ((c, d) <abbr title="|-&gt; :: a -&gt; f a -&gt; f a   (Collection)"><span class="op">|-&gt;</span></abbr> seen) d (<abbr title="move :: (Num c, Num i, Coord&#x27; i c (c, c)) =&gt; Dir2 -&gt; i -&gt; (c, c) -&gt; (c, c)   (Coord)">move</abbr> <span class="op">@</span><span class="ty">ℤ₆₄</span> d <span class="nu">1</span> c)
+
+part1 <span class="op">::</span> <span class="ty">Ѓ</span> <span class="ty">ℤ</span> (<abbr title="? :: a -&gt; QuestionableF a -&gt; QuestionableFR a   (Alias)"><span class="op">?</span></abbr>)
+part1 <span class="op">=</span> <abbr title="size :: Integral i =&gt; a -&gt; i   (Collection)">size</abbr> <span class="op">&lt;$&gt;</span> walk <span class="op">$</span>(<abbr title="grid :: Int -&gt; Q Exp   (TH)">grid</abbr> <span class="nu">6</span>)
+
+part2 <span class="op">::</span> <span class="ty">Ѓ</span> <span class="ty">ℤ</span> (<abbr title="? :: a -&gt; QuestionableF a -&gt; QuestionableFR a   (Alias)"><span class="op">?</span></abbr>)
+part2 <span class="op">=</span>
+  <span class="kw">let</span> g <span class="op">=</span> <span class="op">$</span>(<abbr title="grid :: Int -&gt; Q Exp   (TH)">grid</abbr> <span class="nu">6</span>)
+      walk&#x27; <span class="op">=</span> (((<abbr title="as :: from -&gt; to   (Util)"><span class="kw">as</span></abbr> <span class="op">@</span><span class="ty">ℤ</span> <span class="op">.</span> isNothing <span class="op">.</span> walk <span class="op">.</span> (g <abbr title="||. :: Griddable Identity g k a =&gt; g k a -&gt; (k, a) -&gt; g k a   (Grid)"><span class="op">||.</span></abbr>) <span class="op">.</span> (,<span class="st">&#x27;#&#x27;</span>)) <span class="op">&gt;&gt;&gt;</span>) <span class="op">.</span> (<span class="op">+</span>))
+   <span class="kw">in</span> foldl&#x27; walk&#x27; (<span class="op">-</span><span class="nu">1</span>) <span class="op">&lt;$&gt;</span> (<abbr title="unSet :: Set a -&gt; [a]   (Collection)">unSet</abbr> <span class="op">&lt;$&gt;</span> walk g)</code></pre>
+<!-- /gen -->
+  <div class="cols">
+    <div>
+      <p><code>$(grid 6)</code> is Template Haskell: it reads day 6's input when the program is compiled and splices it in as a <code>Grid Char</code>, so the solution itself contains no file handling. <code>Ѓ ℤ (?)</code> is a type family that means <code>Maybe ℤ</code>. <code>walk</code> returns <code>Nothing</code> when the guard revisits a position facing the same way, which is how part 2 detects a loop.</p>
+      <p>Part 2 tries an obstacle at each position on the original path (only those can change the route) and counts the walks that loop: <code>as @ℤ . isNothing</code> turns "looped" into 1 or 0. The fold starts at −1 for a subtle reason: an obstacle placed on the guard's starting cell overwrites the <code>^</code> that marks it, so <code>gridFindOne '^'</code> finds nothing, <code>walk</code> returns <code>Nothing</code>, and that case would be counted as a loop.</p>
+      <p><a href="https://a.skh.am/advent/#/2024/6">This solution in the Advent of Code viewer</a>.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+      <!-- gen:glossary -->
+<table class="gloss"><caption>Every quaalude name in this solution, with its type</caption>
+<thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Module</th></tr></thead>
+<tbody>
+<tr><td><code class="sym">∈</code></td><td><code>a -&gt; b -&gt; Bool</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">size</code></td><td><code>Integral i =&gt; a -&gt; i</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">|-&gt;</code></td><td><code>a -&gt; f a -&gt; f a</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">as</code></td><td><code>from -&gt; to</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">|?</code></td><td><code>f k v -&gt; k -&gt; Maybe v</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">grid</code></td><td><code>Int -&gt; Q Exp</code></td><td class="mod">TH</td></tr>
+<tr><td><code class="sym">move</code></td><td><code>(Num c, Num i, Coord&#x27; i c (c, c)) =&gt; Dir2 -&gt; i -&gt; (c, c) -&gt; (c, c)</code></td><td class="mod">Coord</td></tr>
+<tr><td><code class="sym">∉</code></td><td><code>a -&gt; b -&gt; Bool</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">∅</code></td><td><code>Monoid a =&gt; a</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">gridFindOne</code></td><td><code>Griddable Identity g k a =&gt; a -&gt; g k a -&gt; Maybe k</code></td><td class="mod">Grid</td></tr>
+<tr><td><code class="sym">unSet</code></td><td><code>Set a -&gt; [a]</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">turnCW</code></td><td><code>d -&gt; d</code></td><td class="mod">Coord</td></tr>
+<tr><td><code class="sym">setMap</code></td><td><code>Ord b =&gt; (a -&gt; b) -&gt; f a -&gt; f b</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">||.</code></td><td><code>Griddable Identity g k a =&gt; g k a -&gt; (k, a) -&gt; g k a</code></td><td class="mod">Grid</td></tr>
+</tbody></table>
+<!-- /gen -->
+  </div>
+</section>
+
+<section class="part" aria-labelledby="h-setup">
+  <h2 id="h-setup">Installing it as the Prelude</h2>
+  <div class="cols">
+    <div>
+      <p>quaalude is not on Hackage. The Advent of Code years that use it carry it as a Git submodule and list it in <code>cabal.project</code>; Cabal's mixins then hide base's Prelude and rename <code>Quaalude</code> to <code>Prelude</code>, so every module in the package gets it without an import.</p>
+<pre tabindex="0"><code><span class="c"># cabal.project</span>
+packages:
+  ./x2024.cabal
+  ./lib/quaalude</code></pre>
+    </div>
+    <div>
+<pre tabindex="0"><code><span class="c"># package.yaml</span>
+dependencies:
+  - name: base
+    mixin:
+      - hiding (Prelude)
+  - name: quaalude
+    mixin:
+      - hiding (Quaalude)
+      - (Quaalude as Prelude)</code></pre>
+      <p>The library turns on 55 language extensions by default (<code>OverloadedStrings</code>, <code>UnicodeSyntax</code>, <code>DataKinds</code>, <code>TypeFamilies</code> …); a project using it copies the same list. It needs GHC 9.8 or newer.</p>
+    </div>
+  </div>
+</section>
+
+<section class="part" aria-labelledby="h-notation">
+  <h2 id="h-notation">Notation</h2>
+  <div class="cols">
+    <div class="table-wrap">
+      <table class="notation">
+        <caption>A few of the aliases</caption>
+        <tbody>
+          <tr><th scope="row">numbers</th><td><code>ℤ</code> Integer · <code>ℤ₆₄</code> Int · <code>ℕ</code> Natural · <code>ℚ</code> Rational · <code>ℝ</code> Double · <code>ℂ</code> Complex</td></tr>
+          <tr><th scope="row">tuples</th><td><code>ℤ²</code> … <code>ℤ¹⁰</code> tuples of ℤ · <code>a × b</code> pairs</td></tr>
+          <tr><th scope="row">others</th><td><code>𝔹</code> Bool · <code>𝕊</code> String · <code>𝕋</code> Text</td></tr>
+          <tr><th scope="row">logic</th><td><code>≡</code> <code>≢</code> <code>≤</code> <code>≥</code> <code>∧</code> <code>∨</code></td></tr>
+          <tr><th scope="row">functions</th><td><code>∘</code> compose · <code>⋅</code> multiply · <code>#</code> pure · <code>⊥</code> undefined</td></tr>
+          <tr><th scope="row">lists</th><td><code>(<>!)</code> mconcat · <code>(🎜)</code> sort · <code>(🎝)</code> sort descending</td></tr>
+        </tbody>
+      </table>
+      </div>
+    <div>
+      <p>Most of the notation is aliases for things Haskell already has, chosen so that types and expressions read like mathematics. They are real type synonyms and functions, so GHCi expands them:</p>
+      <!-- gen:ghci-notation -->
+<pre class="ghci" tabindex="0" aria-label="GHCi session"><code><span class="p">λ</span> :kind! ℤ
+<span class="o">ℤ :: *
+= Integer</span>
+<span class="p">λ</span> :kind! ℤ₆₄
+<span class="o">ℤ₆₄ :: *
+= Int</span>
+<span class="p">λ</span> :kind! ℤ²
+<span class="o">ℤ² :: *
+= (Integer, Integer)</span>
+<span class="p">λ</span> :kind! Ѓ ℤ (?)
+<span class="o">Ѓ ℤ (?) :: *
+= Maybe Integer</span></code></pre>
+<!-- /gen -->
+    </div>
+  </div>
+</section>
+
+<section class="part" aria-labelledby="h-coll">
+  <h2 id="h-coll">One vocabulary for every collection</h2>
+  <p>Haskell's containers each come with their own functions: <code>Set.member</code>, <code>Map.lookup</code>, <code>Seq.index</code>. quaalude puts one set of names over all of them with type classes: <code>mk</code> builds any collection from a list, <code>un</code> lists any collection, <code>co</code> converts between them, and operators such as <code>∈</code>, <code>|?</code> (look up), <code>|!</code> (index), <code>|.</code> (set a key) and <code>|-&gt;</code> (insert) work on whatever they are given.</p>
+  <!-- gen:ghci-collections -->
+<pre class="ghci" tabindex="0" aria-label="GHCi session"><code><span class="p">λ</span> mk [3, 1, 2, 1] :: Set ℤ
+<span class="o">fromList [1,2,3]</span>
+<span class="p">λ</span> un (mk [3, 1, 2, 1] :: Set ℤ)
+<span class="o">[1,2,3]</span>
+<span class="p">λ</span> co [(1, &#x27;a&#x27;), (2, &#x27;b&#x27;)] :: Map ℤ Char
+<span class="o">fromList [(1,&#x27;a&#x27;),(2,&#x27;b&#x27;)]</span>
+<span class="p">λ</span> 3 ∈ (mk [1, 2, 3] :: Set ℤ)
+<span class="o">True</span>
+<span class="p">λ</span> 3 |-&gt; (mk [1] :: Set ℤ)
+<span class="o">fromList [1,3]</span>
+<span class="p">λ</span> size (mk &quot;hello&quot; :: Set Char) :: ℤ
+<span class="o">4</span>
+<span class="p">λ</span> (mkMap [(1, &#x27;a&#x27;)] :: Map ℤ Char) |? 2
+<span class="o">Nothing</span>
+<span class="p">λ</span> (mkMap [(1, &#x27;a&#x27;)] :: Map ℤ Char) |! 1
+<span class="o">&#x27;a&#x27;</span>
+<span class="p">λ</span> (mkMap [(1, &#x27;a&#x27;)] :: Map ℤ Char) |. (2, &#x27;b&#x27;)
+<span class="o">fromList [(1,&#x27;a&#x27;),(2,&#x27;b&#x27;)]</span></code></pre>
+<!-- /gen -->
+  <p>The price is type annotations. With this many overlapping instances, GHC often cannot work out which collection is meant, so code names it (<code>:: Set ℤ</code>), and the type of a container changes which builder works: <code>mk</code> builds the <code>f a</code> shapes (lists, sets, sequences, vectors), while a map needs <code>mkMap</code> or <code>co</code>.</p>
+</section>
+
+<section class="part" aria-labelledby="h-grid">
+  <h2 id="h-grid">Grids and coordinates</h2>
+  <div class="cols">
+    <div>
+      <p>Grids are everywhere in Advent of Code, so <code>Griddable</code> is the largest class in the library. It is parameterised by a monad, which lets the same operations run over immutable storage and over mutable arrays in <code>ST</code> or <code>IO</code> when a simulation needs speed: <code>Map</code>, <code>IntMap</code>, <code>HashMap</code>, nested <code>Vector</code>s, immutable arrays, and mutable <code>IOArray</code>, <code>STArray</code>, <code>STUArray</code>, <code>STVector</code> and <code>IOVector</code> grids. Coordinates are <code>(x, y)</code> pairs; <code>gridFindOne</code> returns the first match in that order, column before row.</p>
+      <p>Cells can be any type with a <code>GridCell</code> instance: <code>Char</code>, <code>DotHash</code>, digits, or <code>Cell "…"</code>, a cell type restricted at the type level to the characters in its string.</p>
+    </div>
+    <div>
+      <!-- gen:ghci-grid -->
+<pre class="ghci" tabindex="0" aria-label="GHCi session"><code><span class="p">λ</span> let g = readGrid &quot;..#\n#..\n&quot; :: Grid Char
+<span class="p">λ</span> g ||? (2, 0)
+<span class="o">Just &#x27;#&#x27;</span>
+<span class="p">λ</span> gridFindOne &#x27;#&#x27; g
+<span class="o">Just (0,1)</span>
+<span class="p">λ</span> maxXY g
+<span class="o">(2,1)</span>
+<span class="p">λ</span> turnCW DirUp
+<span class="o">→</span>
+<span class="p">λ</span> move DirUp (2 :: Int) (5, 5 :: Int)
+<span class="o">(5,3)</span>
+<span class="p">λ</span> manhattan (1, 2) (4, 6 :: Int)
+<span class="o">7</span></code></pre>
+<!-- /gen -->
+    </div>
+  </div>
+</section>
+
+<section class="part" aria-labelledby="h-small">
+  <h2 id="h-small">Parsing and small helpers</h2>
+  <div class="cols">
+    <div>
+      <p>Most puzzle input is numbers in some text, so <code>numbers</code> is a parser that finds them and <code>|-</code> runs a parser on a string and returns its result. Parsec is re-exported for anything harder, and <code>Quaalude.Megaparsec</code> adds a few helpers for Megaparsec. The rest of this block is the small change of everyday code: applying a two-argument function to a pair, duplicating a value, converting with <code>as</code>, sorting, and a conditional that reads left to right.</p>
+      <p>For search, <code>Quaalude.LossQ</code> provides priority queues ordered by a loss function, for Dijkstra and A*-style searches; <code>monad-memo</code> is re-exported for memoised recursion; and <code>Quaalude.Solve</code> wraps the Z3 solver, so a puzzle that is really a system of constraints can be handed to Z3 and the answer read back by type.</p>
+    </div>
+    <div>
+      <!-- gen:ghci-small -->
+<pre class="ghci" tabindex="0" aria-label="GHCi session"><code><span class="p">λ</span> &quot;move 10 to -3, then 42&quot; |- numbers :: [ℤ]
+<span class="o">[10,-3,42]</span>
+<span class="p">λ</span> both (+ 1) (1, 2)
+<span class="o">(2,3)</span>
+<span class="p">λ</span> (+) $@ (2, 3)
+<span class="o">5</span>
+<span class="p">λ</span> dup &#x27;x&#x27;
+<span class="o">(&#x27;x&#x27;,&#x27;x&#x27;)</span>
+<span class="p">λ</span> (&lt;&gt;!) [&quot;ab&quot;, &quot;cd&quot;]
+<span class="o">&quot;abcd&quot;</span>
+<span class="p">λ</span> as @ℤ True
+<span class="o">1</span>
+<span class="p">λ</span> (🎜) [3, 1, 2]
+<span class="o">[1,2,3]</span>
+<span class="p">λ</span> (🎝) [3, 1, 2]
+<span class="o">[3,2,1]</span>
+<span class="p">λ</span> (2 &gt; 1) ??? &quot;yes&quot; $ &quot;no&quot;
+<span class="o">&quot;yes&quot;</span></code></pre>
+<!-- /gen -->
+    </div>
+  </div>
+</section>
+
+<section class="part" aria-labelledby="h-usage">
+  <h2 id="h-usage">The names you will meet</h2>
+  <p>Counted across the 2024 and 2025 solutions, which use quaalude as their Prelude, by <code>scripts/site/usage.py</code>. <code>aoc</code>, which embeds a day's input at compile time, is in almost all of them.</p>
+  <div class="table-wrap" tabindex="0">
+    <!-- gen:usage -->
+<table class="usage"><caption>The 30 most widely used of the 239 quaalude names in the 37 solutions</caption>
+<thead><tr><th scope="col">Name</th><th scope="col" class="num">Solutions</th><th scope="col">Type</th><th scope="col">Module</th></tr></thead>
+<tbody>
+<tr><td><code class="sym">aoc</code></td><td class="num">30</td><td><code>Int -&gt; Q Exp</code></td><td class="mod">TH</td></tr>
+<tr><td><code class="sym">∘</code></td><td class="num">17</td><td><code>(b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">∈</code></td><td class="num">16</td><td><code>a -&gt; b -&gt; Bool</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">≡</code></td><td class="num">14</td><td><code>Eq a =&gt; a -&gt; a -&gt; Bool</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">&lt;&gt;!</code></td><td class="num">14</td><td><code>Monoid a =&gt; [a] -&gt; a</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">#</code></td><td class="num">13</td><td><code>Applicative m =&gt; a -&gt; m a</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">size</code></td><td class="num">12</td><td><code>Integral i =&gt; a -&gt; i</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">|!</code></td><td class="num">12</td><td><code>f k v -&gt; k -&gt; v</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">|-</code></td><td class="num">12</td><td><code>String -&gt; Parser a -&gt; a</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">⋅</code></td><td class="num">12</td><td><code>Num a =&gt; a -&gt; a -&gt; a</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">|-&gt;</code></td><td class="num">11</td><td><code>a -&gt; f a -&gt; f a</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">both</code></td><td class="num">10</td><td><code>Bifunctor f =&gt; (a -&gt; b) -&gt; f a a -&gt; f b b</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">number</code></td><td class="num">9</td><td><code>(Read a, Num a) =&gt; Parser a</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">$@</code></td><td class="num">9</td><td><code>(a -&gt; b -&gt; c) -&gt; (a, b) -&gt; c</code></td><td class="mod">Tuple</td></tr>
+<tr><td><code class="sym">as</code></td><td class="num">9</td><td><code>from -&gt; to</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">?</code></td><td class="num">8</td><td><code>a -&gt; QuestionableF a -&gt; QuestionableFR a</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">cs</code></td><td class="num">8</td><td><code>[(a, Char)]</code></td><td class="mod">Grid</td></tr>
+<tr><td><code class="sym">|?</code></td><td class="num">7</td><td><code>f k v -&gt; k -&gt; Maybe v</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">grid</code></td><td class="num">7</td><td><code>Int -&gt; Q Exp</code></td><td class="mod">TH</td></tr>
+<tr><td><code class="sym">mk</code></td><td class="num">7</td><td><code>[a] -&gt; f a</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">nub</code></td><td class="num">6</td><td><code>Eq a =&gt; [a] -&gt; [a]</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">neighs</code></td><td class="num">6</td><td><code>a -&gt; g -&gt; f a</code></td><td class="mod">Coord</td></tr>
+<tr><td><code class="sym">mk₁</code></td><td class="num">6</td><td><code>Mkable f a =&gt; a -&gt; f a</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">∧</code></td><td class="num">6</td><td><code>Bool -&gt; Bool -&gt; Bool</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">run</code></td><td class="num">6</td><td><code>f a -&gt; a</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">numbers</code></td><td class="num">6</td><td><code>(Read a, Num a) =&gt; Parser [a]</code></td><td class="mod">Util</td></tr>
+<tr><td><code class="sym">|.</code></td><td class="num">6</td><td><code>f k v -&gt; (k, v) -&gt; f k v</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">!!</code></td><td class="num">6</td><td><code>f a -&gt; i -&gt; a</code></td><td class="mod">Collection</td></tr>
+<tr><td><code class="sym">???</code></td><td class="num">6</td><td><code>Bool -&gt; a -&gt; a -&gt; a</code></td><td class="mod">Alias</td></tr>
+<tr><td><code class="sym">□</code></td><td class="num">6</td><td><code>(SChar c :&lt; SymSChars cs, KnownChar c) =&gt; SChar c -&gt; Cell cs</code></td><td class="mod">Grid</td></tr>
+</tbody></table>
+<!-- /gen -->
+  </div>
+</section>
+
+<section class="part" aria-labelledby="h-cost">
+  <h2 id="h-cost">What it costs</h2>
+  <ul class="costs">
+    <li><b>Dependencies.</b> 58 packages, including bindings to the Z3 C library, all re-exported. A fresh build has to compile or fetch all of them before the first solution builds.</li>
+    <li><b>Type errors.</b> Overlapping and polymorphic instances make inference fragile: a missing annotation can produce an ambiguity error that names the class rather than the mistake, and some names behave differently on different containers.</li>
+    <li><b>Reading.</b> The notation is fast to write and compact to read once learned, but a newcomer has a large vocabulary to learn, much of it Unicode that needs an editor set up to type it.</li>
+    <li><b>Scope.</b> It is made for puzzles: partial functions are used freely, and nothing is promised about stability. The <a href="https://a.skh.am/advent/">Advent of Code viewer</a> shows where it helps and where it obscures, solution by solution.</li>
+  </ul>
+</section>
+
+<section class="part" aria-labelledby="h-ref">
+  <h2 id="h-ref">Reference</h2>
+  <p>The <a href="reference/">reference</a> lists every module's exports as GHCi's <code>:browse</code> prints them for the compiled library, with a filter for names and types.</p>
+</section>
+</main>
+
+<footer class="foot">
+  <span>quaalude</span>
+  <a href="https://github.com/harryaskham/quaalude">Source</a>
+  <a href="https://a.skh.am/advent/">Advent of Code solutions</a>
+  <a href="https://a.skh.am/all/">More at a.skh.am/all</a>
+</footer>
+</div>
+<script src="assets/site.js" defer></script>
+</body>
+</html>
